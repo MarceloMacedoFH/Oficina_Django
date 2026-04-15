@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container pb-5">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'lista_os' %}">Início</a></li>
+        <li class="breadcrumb-item active">Nova OS</li>
+      </ol>
+    </nav>
+
+    <h2 class="mb-4 fw-bold text-dark">Cadastro de Ordem de Serviço</h2>
+
+    <form method="post" id="os-form" class="card p-4 shadow-sm border-0">
+        {% csrf_token %}
+        
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label fw-bold">Cliente</label>
+                {{ form.cliente }}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold">Veículo</label>
+                {{ form.veiculo }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">Status Atual</label>
+                {{ form.status }}
+            </div>
+        </div>
+
+        <hr class="my-5">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0 text-primary">Peças Aplicadas</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm add-row" data-prefix="{{ formset_pecas.prefix }}">
+                + Adicionar Peça
+            </button>
+        </div>
+        {{ formset_pecas.management_form }}
+        <div class="table-responsive mb-4">
+            <table class="table table-sm align-middle" id="table-{{ formset_pecas.prefix }}">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descrição da Peça</th>
+                        <th width="120">Qtd</th>
+                        <th width="150">Vlr. Unitário</th>
+                        <th width="150">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="formset-body">
+                    {% for f in formset_pecas %}
+                    <tr class="form-row">
+                        <td>{{ f.peca }}</td>
+                        <td>{{ f.quantidade }}</td>
+                        <td>{{ f.preco_unitario }}</td>
+                        <td><input type="text" class="form-control item-subtotal" readonly value="R$ 0,00"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0 text-primary">Mão de Obra / Serviços</h4>
+            <button type="button" class="btn btn-outline-primary btn-sm add-row" data-prefix="{{ formset_servicos.prefix }}">
+                + Adicionar Serviço
+            </button>
+        </div>
+        {{ formset_servicos.management_form }}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle" id="table-{{ formset_servicos.prefix }}">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descrição do Serviço</th>
+                        <th width="120">Qtd</th>
+                        <th width="150">Vlr. Unitário</th>
+                        <th width="150">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody class="formset-body">
+                    {% for f in formset_servicos %}
+                    <tr class="form-row">
+                        <td>{{ f.servico }}</td>
+                        <td>{{ f.quantidade }}</td>
+                        <td>{{ f.preco_unitario }}</td>
+                        <td><input type="text" class="form-control item-subtotal" readonly value="R$ 0,00"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-5 pt-4 border-top">
+            <div class="col-md-8">
+                <label class="form-label fw-bold">Observações Técnicas</label>
+                {{ form.observacoes }}
+            </div>
+            <div class="col-md-4">
+                <div class="bg-dark p-3 rounded shadow-sm text-end">
+                    <label class="text-white-50 d-block small mb-1">VALOR TOTAL DA OS</label>
+                    <input type="text" id="total-geral" class="form-control form-control-lg text-end bg-transparent border-0 text-success fw-bold p-0" readonly value="R$ 0,00">
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 d-flex gap-2">
+            <button type="submit" class="btn btn-success btn-lg px-5 shadow-sm">Salvar e Finalizar</button>
+            <a href="{% url 'lista_os' %}" class="btn btn-light btn-lg px-5 border">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

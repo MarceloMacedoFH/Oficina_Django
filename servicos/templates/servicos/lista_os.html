@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-list-task"></i> Lista de Ordens de Serviço</h2>
+        <a href="{% url 'nova_os' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Nova OS
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nº OS</th>
+                        <th>Cliente</th>
+                        <th>Veículo</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for os in ordens %}
+                    <tr>
+                        <td><strong>#{{ os.id }}</strong></td>
+                        <td>{{ os.cliente.nome }}</td>
+                        <td>{{ os.veiculo.modelo }} ({{ os.veiculo.placa }})</td>
+                        <td>
+                            <span class="badge {% if os.status == 'ORC' %}bg-warning text-dark{% elif os.status == 'APR' %}bg-info{% elif os.status == 'FIN' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ os.get_status_display }}
+                            </span>
+                        </td>
+                        <td>R$ {{ os.valor_total }}</td>
+                        <td>
+                            <div class="btn-group">
+                                {% if os.status == 'ORC' %}
+                                    <a href="{% url 'editar_os' os.id %}" class="btn btn-sm btn-outline-primary" title="Editar Orçamento">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-secondary" disabled title="Edição permitida apenas para Orçamentos">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                {% endif %}
+
+                                {% if os.status == 'ORC' %}
+                                    <button class="btn btn-sm btn-outline-success btn-status" data-os="{{ os.id }}" data-status="APR" title="Aprovar OS">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                {% endif %}
+
+                                {% if os.status != 'CAN' and os.status != 'FIN' %}
+                                    <button class="btn btn-sm btn-outline-danger btn-status" data-os="{{ os.id }}" data-status="CAN" title="Cancelar OS">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                {% endif %}
+                                
+                                <a href="#" class="btn btn-sm btn-outline-dark" title="Imprimir PDF">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Nenhuma Ordem de Serviço encontrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

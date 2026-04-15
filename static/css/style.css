@@ -1,0 +1,17 @@
+/* Customizações para a Oficina */
+.bg-light { background-color: #f8f9fa !important; }
+.card { border: none; border-radius: 10px; }
+.form-control-lg { font-size: 1.5rem; }
+.item-subtotal { background-color: #e9ecef !important; font-weight: bold; }
+#total-geral { background-color: #212529; color: #28a745 !important; border: none; }
+.formset-body tr { transition: all 0.2s; }
+.formset-body tr:hover { background-color: #f1f3f5; }
+/* Permite que o dropdown apareça sobre a tabela */
+.table-responsive {
+    overflow: visible !important;
+}
+
+/* Ajuste para que o dropdown não fique colado no topo */
+.dropdown-menu {
+    z-index: 1050; /* Garante que fique acima de outros elementos */
+}
