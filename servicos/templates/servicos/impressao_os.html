@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OS #{{ os.id }} - {{ os.cliente.nome }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; }
+        .info-box { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .total { text-align: right; font-size: 1.2em; font-weight: bold; margin-top: 20px; }
+        
+        /* Esconde botões na hora de imprimir */
+        @media print {
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()">🖨️ Imprimir Agora</button>
+        <a href="{% url 'lista_os' %}">Voltar</a>
+        <hr>
+    </div>
+
+    <div class="header">
+        <h1>OFICINA MASTER</h1>
+        <p>Ordem de Serviço Nº: <strong>{{ os.id }}</strong> | Status: {{ os.get_status_display }}</p>
+    </div>
+
+    <div class="info-box">
+        <div>
+            <strong>CLIENTE:</strong> {{ os.cliente.nome }}<br>
+            <strong>VEÍCULO:</strong> {{ os.veiculo.modelo }} ({{ os.veiculo.placa }})
+        </div>
+        <div>
+            <strong>DATA:</strong> {{ os.data_entrada|date:"d/m/Y H:i" }}
+        </div>
+    </div>
+
+    <h3>PEÇAS</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Descrição</th>
+                <th>Qtd</th>
+                <th>V. Unit</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in os.itens_pecas.all %}
+            <tr>
+                <td>{{ item.peca.descricao }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>R$ {{ item.preco_unitario }}</td>
+                <td>R$ {% widthratio item.quantidade 1 item.preco_unitario %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>SERVIÇOS</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Descrição</th>
+                <th>Qtd</th>
+                <th>V. Unit</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in os.itens_servicos.all %}
+            <tr>
+                <td>{{ item.servico.descricao }}</td>
+                <td>{{ item.quantidade }}</td>
+                <td>R$ {{ item.preco_unitario }}</td>
+                <td>R$ {% widthratio item.quantidade 1 item.preco_unitario %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="total">
+        TOTAL DA OS: R$ {{ os.valor_total }}
+    </div>
+
+    <div style="margin-top: 50px; text-align: center;">
+        <p>__________________________________________________</p>
+        <p>Assinatura do Cliente</p>
+    </div>
+</body>
+</html>
