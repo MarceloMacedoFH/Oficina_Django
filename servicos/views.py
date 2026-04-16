@@ -56,12 +56,13 @@ def nova_os(request):
 def editar_os(request, pk):
     os_instancia = get_object_or_404(OrdemServico, pk=pk)
     
-    # Proteção de Status
+    # Validação de status que definimos anteriormente
     if os_instancia.status != 'ORC':
-        messages.warning(request, "Esta OS está bloqueada para edição (Status: {}).".format(os_instancia.get_status_display()))
+        messages.warning(request, "Apenas orçamentos podem ser editados.")
         return redirect('lista_os')
 
     if request.method == 'POST':
+        # IMPORTANTE: Passar a 'instance' aqui é o que garante o UPDATE em vez de um novo INSERT
         form = OSForm(request.POST, instance=os_instancia)
         formset_pecas = ItemPecaFormSet(request.POST, instance=os_instancia)
         formset_servicos = ItemServicoFormSet(request.POST, instance=os_instancia)
@@ -69,21 +70,22 @@ def editar_os(request, pk):
         if form.is_valid() and formset_pecas.is_valid() and formset_servicos.is_valid():
             try:
                 with transaction.atomic():
-                    # Salva a OS
+                    # 1. Guarda o cabeçalho
                     ordem_servico = form.save()
                     
-                    # Salva Peças e Serviços (O Django lida com updates e deletes aqui)
+                    # 2. Guarda os formsets diretamente (isso processa deletes e updates)
                     formset_pecas.save()
                     formset_servicos.save()
                     
-                    # Recalcula e salva o total final
+                    # 3. Recalcula o total
                     ordem_servico.atualizar_total()
                 
-                messages.success(request, f"OS #{ordem_servico.id} atualizada com sucesso.")
+                messages.success(request, f"OS #{ordem_servico.id} atualizada com sucesso!")
                 return redirect('lista_os')
             except ValueError as e:
                 messages.error(request, str(e))
     else:
+        # Carregamento inicial (GET)
         form = OSForm(instance=os_instancia)
         formset_pecas = ItemPecaFormSet(instance=os_instancia)
         formset_servicos = ItemServicoFormSet(instance=os_instancia)
