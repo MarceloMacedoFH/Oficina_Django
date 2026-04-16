@@ -141,3 +141,38 @@ def alterar_status_os(request, os_id):
 def imprimir_os(request, pk):
     os_instancia = get_object_or_404(OrdemServico, pk=pk)
     return render(request, 'servicos/impressao_os.html', {'os': os_instancia})
+
+from django.db.models import Sum
+from django.utils import timezone
+from .models import OrdemServico, Pecas
+
+@login_required
+def dashboard(request):
+    hoje = timezone.now().date()
+    
+    # 1. Dados para os Cards
+    os_do_dia = OrdemServico.objects.filter(data_entrada__date=hoje).count()
+    
+    faturamento = OrdemServico.objects.filter(
+        status='FIN', 
+        data_entrada__month=hoje.month
+    ).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+    
+    pecas_sem_estoque = Pecas.objects.filter(estoque_atual__lte=0).count()
+    
+    os_em_atraso = OrdemServico.objects.filter(
+        status__in=['ORC', 'APR'], 
+        data_entrada__date__lt=hoje
+    ).count()
+
+    # 2. Últimas 5 Atividades (últimas OS criadas/modificadas)
+    ultimas_atividades = OrdemServico.objects.all().order_by('-id')[:5]
+
+    context = {
+        'os_do_dia': os_do_dia,
+        'faturamento': faturamento,
+        'pecas_sem_estoque': pecas_sem_estoque,
+        'os_em_atraso': os_em_atraso,
+        'ultimas_atividades': ultimas_atividades,
+    }
+    return render(request, 'servicos/dashboard.html', context)

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 fw-bold"><i class="bi bi-speedometer2"></i> Painel de Controle</h2>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase small">OS do Dia</h6>
+                    <h2 class="fw-bold">{{ os_do_dia }}</h2>
+                    <i class="bi bi-calendar-check position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase small">Faturamento (Mês)</h6>
+                    <h2 class="fw-bold">R$ {{ faturamento|floatformat:2 }}</h2>
+                    <i class="bi bi-cash-stack position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase small">Peças Sem Estoque</h6>
+                    <h2 class="fw-bold">{{ pecas_sem_estoque }}</h2>
+                    <i class="bi bi-exclamation-triangle position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase small">OS em Atraso</h6>
+                    <h2 class="fw-bold">{{ os_em_atraso }}</h2>
+                    <i class="bi bi-clock-history position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white fw-bold">Fluxo de Ordens de Serviço</div>
+                <div class="card-body">
+                    <canvas id="myChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">Atividades Recentes</div>
+                <div class="list-group list-group-flush">
+                    {% for os in ultimas_atividades %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1 fw-bold">OS #{{ os.id }} - {{ os.cliente.nome|truncatechars:15 }}</h6>
+                            <small class="text-muted">{{ os.data_entrada|date:"d/m" }}</small>
+                        </div>
+                        <p class="mb-1 small text-secondary">{{ os.veiculo.modelo }} - {{ os.get_status_display }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer bg-white text-center">
+                    <a href="{% url 'lista_os' %}" class="btn btn-sm btn-link">Ver todas as OS</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+            datasets: [{
+                label: 'Novas OS',
+                data: [12, 19, 3, 5, 2, 3], // Aqui você pode passar dados reais da view futuramente
+                borderColor: '#0d6efd',
+                tension: 0.3,
+                fill: true,
+                backgroundColor: 'rgba(13, 110, 253, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } }
+        }
+    });
+</script>
+{% endblock %}

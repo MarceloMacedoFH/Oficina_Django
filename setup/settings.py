@@ -125,7 +125,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 LOGIN_URL = 'login'
 
 # Define para onde o usuário vai logo após fazer o login com sucesso
-LOGIN_REDIRECT_URL = 'lista_os'
+LOGIN_REDIRECT_URL = 'dashboard'
 
 # Define para onde o usuário vai após fazer logout
 LOGOUT_REDIRECT_URL = 'login'

@@ -9,4 +9,5 @@ urlpatterns = [
     path('alterar-status/<int:os_id>/', views.alterar_status_os, name='alterar_status_os'),
     path('editar/<int:pk>/', views.editar_os, name='editar_os'),
     path('imprimir/<int:pk>/', views.imprimir_os, name='imprimir_os'),
+    path('dashboard/', views.dashboard, name='dashboard'),
 ]
