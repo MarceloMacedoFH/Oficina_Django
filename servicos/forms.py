@@ -1,5 +1,5 @@
 from django import forms
-from .models import OrdemServico, ItemPeca, ItemServico
+from .models import OrdemServico, ItemPeca, ItemServico,Veiculo
 
 class OSForm(forms.ModelForm):
     class Meta:
@@ -12,6 +12,22 @@ class OSForm(forms.ModelForm):
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 1. Começa com a lista vazia por segurança
+        self.fields['veiculo'].queryset = Veiculo.objects.none()
+
+        # 2. Se houver um cliente já selecionado (Edição ou erro de POST)
+        if 'cliente' in self.data:
+            try:
+                cliente_id = int(self.data.get('cliente'))
+                self.fields['veiculo'].queryset = Veiculo.objects.filter(cliente_id=cliente_id).distinct()
+            except (ValueError, TypeError):
+                pass
+        elif self.instance.pk and self.instance.cliente:
+            # Se for edição, traz apenas os veículos daquele cliente específico
+            self.fields['veiculo'].queryset = self.instance.cliente.veiculos.all().distinct()
 ItemPecaFormSet = forms.inlineformset_factory(
     OrdemServico, ItemPeca, fields=['peca', 'quantidade', 'preco_unitario'],
     extra=1, can_delete=True, min_num=0, validate_min=False,

@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.lista_ordens_servico, name='lista_os'), 
     path('nova/', views.nova_os, name='nova_os'),
     path('buscar-preco/', views.buscar_preco, name='buscar_preco'),
+    path('buscar-veiculos/', views.buscar_veiculos_cliente, name='buscar_veiculos_cliente'),
     path('alterar-status/<int:os_id>/', views.alterar_status_os, name='alterar_status_os'),
     path('editar/<int:pk>/', views.editar_os, name='editar_os'),
     path('imprimir/<int:pk>/', views.imprimir_os, name='imprimir_os'),

@@ -163,4 +163,47 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // --- 5. FILTRO DINÂMICO DE VEÍCULOS POR CLIENTE ---
+    // No seu os_logic.js
+    const selectCliente = document.querySelector('select[name="cliente"]');
+    const selectVeiculo = document.querySelector('select[name="veiculo"]');
+    
+    if (selectCliente && selectVeiculo) {
+        // Removemos qualquer listener anterior para evitar execuções duplas
+        selectCliente.replaceWith(selectCliente.cloneNode(true));
+        const novoSelectCliente = document.querySelector('select[name="cliente"]');
+    
+        novoSelectCliente.addEventListener('change', function() {
+            const clienteId = this.value;
+        
+            // Limpeza Total: Remove todos os filhos antes de qualquer fetch
+            while (selectVeiculo.firstChild) {
+                selectVeiculo.removeChild(selectVeiculo.firstChild);
+            }
+            
+            // Adiciona a opção padrão
+            const padrao = new Option('---------', '');
+            selectVeiculo.add(padrao);
+        
+            if (clienteId) {
+                fetch(`/ordens/buscar-veiculos/?cliente_id=${clienteId}`)
+                    .then(res => res.json())
+                    .then(dados => {
+                        // Usamos um Set para garantir unicidade no lado do cliente
+                        const idsExistentes = new Set();
+                        
+                        dados.forEach(v => {
+                            if (!idsExistentes.has(v.id)) {
+                                const option = new Option(`${v.modelo} (${v.placa})`, v.id);
+                                selectVeiculo.add(option);
+                                idsExistentes.add(v.id);
+                            }
+                        });
+                    })
+                    .catch(err => console.error('Erro ao buscar veículos:', err));
+            }
+        });
+    }
 });
+

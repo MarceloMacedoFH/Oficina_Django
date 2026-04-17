@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
-from .models import OrdemServico, Pecas, Servico, ItemPeca
+from .models import OrdemServico, Pecas, Servico, ItemPeca, Veiculo
 from .forms import OSForm, ItemPecaFormSet, ItemServicoFormSet
 
 @login_required
@@ -133,6 +133,14 @@ def buscar_preco(request):
         return JsonResponse({'preco': float(item.valor_mao_de_obra)})
     except:
         return JsonResponse({'preco': 0}, status=404)
+
+@login_required
+def buscar_veiculos_cliente(request):
+    cliente_id = request.GET.get('cliente_id')
+    if not cliente_id:
+        return JsonResponse([], safe=False)
+    veiculos = Veiculo.objects.filter(cliente_id=cliente_id).values('id', 'modelo', 'placa').distinct()
+    return JsonResponse(list(veiculos), safe=False)
 
 @login_required
 def alterar_status_os(request, os_id):
