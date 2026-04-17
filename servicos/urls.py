@@ -12,5 +12,6 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),    
     path('estoque/', views.lista_estoque, name='lista_estoque'),
     path('estoque/novo/', views.criar_produto, name='criar_produto'),
+    path('estoque/editar/<int:pk>/', views.editar_produto, name='editar_produto'),
     path('estoque/excluir/<int:pk>/', views.excluir_produto, name='excluir_produto'),
 ]

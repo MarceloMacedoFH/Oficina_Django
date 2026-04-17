@@ -207,6 +207,23 @@ def criar_produto(request):
     return redirect('lista_estoque')
 
 @login_required
+def editar_produto(request, pk):
+    produto = get_object_or_404(Pecas, pk=pk)
+    
+    if request.method == 'POST':
+        produto.descricao = request.POST.get('descricao')
+        produto.preco_venda = request.POST.get('preco').replace(',', '.')
+        produto.estoque_atual = request.POST.get('estoque')
+        # Captura o status do checkbox de ativação
+        produto.ativo = 'ativo' in request.POST 
+        
+        produto.save()
+        messages.success(request, f"Produto '{produto.descricao}' atualizado com sucesso!")
+        return redirect('lista_estoque')
+    
+    return render(request, 'servicos/editar_produto.html', {'produto': produto})
+
+@login_required
 def excluir_produto(request, pk):
     produto = get_object_or_404(Pecas, pk=pk)
     

@@ -41,14 +41,16 @@
                             </td>
                             <td class="text-center pe-4">
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></button>
-                                    
-                                    <a href="{% url 'excluir_produto' peca.id %}" 
-                                       class="btn btn-sm btn-outline-danger" 
-                                       onclick="return confirm('Deseja excluir ou bloquear este produto?')"
-                                       title="Excluir/Bloquear">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary" title="Editar">
+                                        <a href="{% url 'editar_produto' peca.id %}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" title="Excluir/Bloquear">
+                                        <a href="{% url 'excluir_produto' peca.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deseja excluir ou bloquear este produto?')" title="Excluir/Bloquear">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
