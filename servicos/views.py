@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
-from .models import OrdemServico, Pecas, Servico
+from .models import OrdemServico, Pecas, Servico, ItemPeca
 from .forms import OSForm, ItemPecaFormSet, ItemServicoFormSet
 from django.db import transaction
 
@@ -24,8 +24,8 @@ def nova_os(request):
                     ordem_servico = form.save()
                     
                     # Processa Peças (ignora linhas vazias ou sem quantidade)
-                    pecas = formset_pecas.save(commit=False)
-                    for item in pecas:
+                    pecas_disponiveis = Pecas.objects.filter(ativo=True ).order_by('descricao')
+                    for item in pecas_disponiveis:
                         if hasattr(item, 'peca') and item.peca and item.quantidade > 0:
                             item.ordem_servico = ordem_servico
                             item.save()
@@ -48,8 +48,15 @@ def nova_os(request):
         formset_pecas = ItemPecaFormSet()
         formset_servicos = ItemServicoFormSet()
 
+    # --- CORREÇÃO CRÍTICA AQUI ---
+    # Filtra o campo 'peca' dentro de cada formulário do formset antes de renderizar
+    for f in formset_pecas.forms:
+        f.fields['peca'].queryset = Pecas.objects.filter(ativo=True, estoque_atual__gt=0).order_by('descricao')
+
     return render(request, 'servicos/form_os.html', {
-        'form': form, 'formset_pecas': formset_pecas, 'formset_servicos': formset_servicos
+        'form': form, 
+        'formset_pecas': formset_pecas, 
+        'formset_servicos': formset_servicos
     })
 
 @login_required
@@ -176,3 +183,42 @@ def dashboard(request):
         'ultimas_atividades': ultimas_atividades,
     }
     return render(request, 'servicos/dashboard.html', context)
+
+@login_required
+def lista_estoque(request):
+    pecas = Pecas.objects.all().order_by('descricao')
+    return render(request, 'servicos/estoque.html', {'pecas': pecas})
+
+@login_required
+def criar_produto(request):
+    if request.method == 'POST':
+        descricao = request.POST.get('descricao')
+        preco = request.POST.get('preco')
+        estoque = request.POST.get('estoque')
+
+        Pecas.objects.create(
+            descricao=descricao,
+            preco_venda=preco,
+            estoque_atual=estoque
+        )
+        messages.success(request, "Produto cadastrado com sucesso!")
+        return redirect('lista_estoque')
+    
+    return redirect('lista_estoque')
+
+@login_required
+def excluir_produto(request, pk):
+    produto = get_object_or_404(Pecas, pk=pk)
+    
+    # Verifica se o produto está em alguma OS (tabela de itens da OS)
+    em_uso = ItemPeca.objects.filter(peca=produto).exists()
+
+    if em_uso:
+        produto.ativo = False
+        produto.save()
+        messages.warning(request, f"O produto '{produto.descricao}' possui histórico em OS e foi apenas BLOQUEADO.")
+    else:
+        produto.delete()
+        messages.success(request, f"Produto '{produto.descricao}' excluído com sucesso.")
+    
+    return redirect('lista_estoque')

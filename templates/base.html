@@ -67,7 +67,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Estoque</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'lista_estoque' %}active fw-bold{% endif %}" href="{% url 'lista_estoque' %}">
+                            <i class="bi bi-box-seam"></i> Estoque
+                        </a>
                     </li>
                     {% endif %}
                 </ul>

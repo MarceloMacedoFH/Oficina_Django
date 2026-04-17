@@ -161,6 +161,20 @@
             }
         });
     });
+    // Validação extra de stock diretamente no formulário
+    $(document).on('change', '.qtd-item', function() {
+        const row = $(this).closest('tr');
+        const selectedOption = row.find('.select-peca option:selected');
+        const estoqueDisp = parseInt(selectedOption.data('estoque'));
+        const qtdInformada = parseInt($(this).val());
+
+        if (qtdInformada > estoqueDisp) {
+            alert(`Atenção: Apenas ${estoqueDisp} unidades disponíveis em stock.`);
+            $(this).val(estoqueDisp);
+            // Disparar recálculo se necessário
+            $(this).trigger('input');
+        }
+    });
 </script>
 {% endblock %}
 
