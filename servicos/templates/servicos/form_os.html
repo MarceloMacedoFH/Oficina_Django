@@ -1,7 +1,16 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container pb-5">
+<div class="container pb-5 mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="{% url 'lista_os' %}">Início</a></li>
@@ -9,15 +18,15 @@
       </ol>
     </nav>
 
-    <h2 class="mb-4 fw-bold">
+    <h2 class="mb-4 fw-bold text-body-emphasis">
         {% if editando %}
-            <i class="bi bi-pencil-square"></i> Editar Ordem de Serviço
+            <i class="bi bi-pencil-square text-primary"></i> Editar Ordem de Serviço
         {% else %}
-            <i class="bi bi-plus-circle"></i> Cadastro de Ordem de Serviço
+            <i class="bi bi-plus-circle text-primary"></i> Cadastro de Ordem de Serviço
         {% endif %}
     </h2>
 
-    <form method="post" id="os-form" class="card p-4 shadow-sm border-0">
+    <form method="post" id="os-form" class="card p-4 shadow-sm border-0 bg-body-tertiary">
         {% csrf_token %}
         
         {{ formset_pecas.management_form }}
@@ -25,36 +34,36 @@
         
         <div class="row g-3">
             <div class="col-md-5">
-                <label class="form-label fw-bold">Cliente</label>
+                <label class="form-label fw-bold text-secondary small">CLIENTE</label>
                 {{ form.cliente }}
             </div>
             <div class="col-md-4">
-                <label class="form-label fw-bold">Veículo</label>
+                <label class="form-label fw-bold text-secondary small">VEÍCULO</label>
                 {{ form.veiculo }}
             </div>
             <div class="col-md-3">
-                <label class="form-label fw-bold">Status Atual</label>
+                <label class="form-label fw-bold text-secondary small">STATUS ATUAL</label>
                 {{ form.status }}
             </div>
         </div>
 
-        <hr class="my-5">
+        <hr class="my-5 opacity-10">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-box-seam"></i> Peças Aplicadas</h4>
+            <h4 class="mb-0 text-primary fw-bold"><i class="bi bi-box-seam"></i> Peças Aplicadas</h4>
             <button type="button" class="btn btn-outline-primary btn-sm add-row" data-prefix="itens_pecas">
                 <i class="bi bi-plus-lg"></i> Adicionar Peça
             </button>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive mb-4">
             <table class="table table-hover align-middle" id="table-itens_pecas">
                 <thead class="table-group-divider">
-                    <tr class="text-body-secondary">
-                        <th style="width: 40%;">Peça</th>
-                        <th style="width: 15%;">Qtd</th>
-                        <th style="width: 20%;">V. Unitário</th>
-                        <th style="width: 20%;">Subtotal</th>
+                    <tr class="text-secondary small">
+                        <th style="width: 40%;">PEÇA</th>
+                        <th style="width: 15%;">QTD</th>
+                        <th style="width: 20%;">V. UNITÁRIO</th>
+                        <th style="width: 20%;">SUBTOTAL</th>
                         <th style="width: 5%;"></th>
                     </tr>
                 </thead>
@@ -66,14 +75,16 @@
                         <td>{{ f.quantidade }}</td>
                         <td>{{ f.preco_unitario }}</td>
                         <td>
-                            <input type="text" class="form-control item-subtotal" readonly value="R$ 0,00">
+                            <input type="text" class="form-control item-subtotal bg-transparent border-0 text-body" readonly value="R$ 0,00">
                         </td>
                         <td class="text-center">
                             {% if formset_pecas.can_delete %}
-                                <div class="form-check">
+                                <div class="form-check d-none">
                                     {{ f.DELETE }}
-                                    <label class="form-check-label text-danger small"><i class="bi bi-trash"></i></label>
                                 </div>
+                                <button type="button" class="btn btn-link text-danger btn-remove" title="Remover Peça">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -82,10 +93,10 @@
             </table>
         </div>
 
-        <hr class="my-5">
+        <hr class="my-5 opacity-10">
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0 text-primary"><i class="bi bi-tools"></i> Mão de Obra / Serviços</h4>
+            <h4 class="mb-0 text-primary fw-bold"><i class="bi bi-tools"></i> Mão de Obra / Serviços</h4>
             <button type="button" class="btn btn-outline-primary btn-sm add-row" data-prefix="itens_servicos">
                 <i class="bi bi-plus-lg"></i> Adicionar Serviço
             </button>
@@ -94,11 +105,11 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="table-itens_servicos">
                 <thead class="table-group-divider">
-                    <tr>
-                        <th style="width: 40%;">Serviço</th>
-                        <th style="width: 15%;">Qtd</th>
-                        <th style="width: 20%;">V. Unitário</th>
-                        <th style="width: 20%;">Subtotal</th>
+                    <tr class="text-secondary small">
+                        <th style="width: 40%;">SERVIÇO</th>
+                        <th style="width: 15%;">QTD</th>
+                        <th style="width: 20%;">V. UNITÁRIO</th>
+                        <th style="width: 20%;">SUBTOTAL</th>
                         <th style="width: 5%;"></th>
                     </tr>
                 </thead>
@@ -110,14 +121,16 @@
                         <td>{{ f.quantidade }}</td>
                         <td>{{ f.preco_unitario }}</td>
                         <td>
-                            <input type="text" class="form-control item-subtotal" readonly value="R$ 0,00">
+                            <input type="text" class="form-control item-subtotal bg-transparent border-0 text-body" readonly value="R$ 0,00">
                         </td>
                         <td class="text-center">
                             {% if formset_servicos.can_delete %}
-                                <div class="form-check">
+                                <div class="form-check d-none">
                                     {{ f.DELETE }}
-                                    <label class="form-check-label text-danger small"><i class="bi bi-trash"></i></label>
                                 </div>
+                                <button type="button" class="btn btn-link text-danger btn-remove" title="Remover Serviço">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             {% endif %}
                         </td>
                     </tr>
@@ -128,12 +141,12 @@
 
         <div class="row mt-5 pt-4 border-top">
             <div class="col-md-8">
-                <label class="form-label fw-bold">Observações Técnicas</label>
+                <label class="form-label fw-bold text-secondary small">OBSERVAÇÕES TÉCNICAS</label>
                 {{ form.observacoes }}
             </div>
             <div class="col-md-4">
-                <div class="bg-body-tertiary p-3 rounded shadow-sm text-end border border-primary">
-                    <label class="text-secondary d-block small mb-1">VALOR TOTAL DA OS</label>
+                <div class="bg-dark p-3 rounded shadow-sm text-end border border-primary border-opacity-25">
+                    <label class="text-secondary d-block small mb-1 fw-bold">VALOR TOTAL DA OS</label>
                     <input type="text" id="total-geral" 
                            class="form-control form-control-lg text-end bg-transparent border-0 text-success fw-bold p-0" 
                            readonly value="R$ 0,00">
@@ -153,7 +166,7 @@
 {% block extra_js %}
 <script src="/static/js/os_logic.js"></script>
 <script>
-    // Dispara o cálculo inicial caso existam dados (Edição)
+    // Inicialização e Cálculos
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.form-row').forEach(row => {
             if (typeof executarCalculos === "function") {
@@ -161,21 +174,37 @@
             }
         });
     });
-    // Validação extra de stock diretamente no formulário
+
+    // Validação de stock em tempo real no front-end
     $(document).on('change', '.qtd-item', function() {
         const row = $(this).closest('tr');
         const selectedOption = row.find('.select-peca option:selected');
         const estoqueDisp = parseInt(selectedOption.data('estoque'));
         const qtdInformada = parseInt($(this).val());
 
-        if (qtdInformada > estoqueDisp) {
-            alert(`Atenção: Apenas ${estoqueDisp} unidades disponíveis em stock.`);
+        if (!isNaN(estoqueDisp) && qtdInformada > estoqueDisp) {
+            alert(`Stock insuficiente! Apenas ${estoqueDisp} unidades disponíveis.`);
             $(this).val(estoqueDisp);
-            // Disparar recálculo se necessário
-            $(this).trigger('input');
+            $(this).trigger('input'); 
+        }
+    });
+
+    // Lógica para remoção de linhas (suporte a DELETE do Django)
+    $(document).on('click', '.btn-remove', function() {
+        const row = $(this).closest('.form-row');
+        const deleteCheckbox = row.find('input[name$="-DELETE"]');
+        
+        if (deleteCheckbox.length) {
+            deleteCheckbox.prop('checked', true);
+            row.hide();
+        } else {
+            row.remove();
+        }
+        
+        if (typeof atualizarTotalGeral === "function") {
+            atualizarTotalGeral();
         }
     });
 </script>
 {% endblock %}
-
 {% endblock %}

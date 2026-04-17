@@ -2,12 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
+from django.db import transaction
+from django.db.models import Sum
+from django.utils import timezone
 from .models import OrdemServico, Pecas, Servico, ItemPeca
 from .forms import OSForm, ItemPecaFormSet, ItemServicoFormSet
-from django.db import transaction
 
 @login_required
-def lista_ordens_servico(request): # Nome alterado para bater com o urls.py
+def lista_ordens_servico(request): 
     ordens = OrdemServico.objects.all().order_by('-id')
     return render(request, 'servicos/lista_os.html', {'ordens': ordens})
 
@@ -15,87 +17,102 @@ def lista_ordens_servico(request): # Nome alterado para bater com o urls.py
 def nova_os(request):
     if request.method == 'POST':
         form = OSForm(request.POST)
-        formset_pecas = ItemPecaFormSet(request.POST)
-        formset_servicos = ItemServicoFormSet(request.POST)
+        
+        # TRUQUE DE ARQUITETURA: Criamos a OS em memória (commit=False)
+        # Isso permite validar os formsets filhos sem gravar o pai no banco ainda.
+        os_temp = form.save(commit=False)
+        
+        # Passamos a instância para que o Django cuide de ligar as ForeignKeys sozinho
+        formset_pecas = ItemPecaFormSet(request.POST, instance=os_temp, prefix='itens_pecas')
+        formset_servicos = ItemServicoFormSet(request.POST, instance=os_temp, prefix='itens_servicos')
 
         if form.is_valid() and formset_pecas.is_valid() and formset_servicos.is_valid():
             try:
                 with transaction.atomic():
+                    # 1. Salva a OS no banco (agora ela tem um ID definitivo)
                     ordem_servico = form.save()
                     
-                    # Processa Peças (ignora linhas vazias ou sem quantidade)
-                    pecas_disponiveis = Pecas.objects.filter(ativo=True ).order_by('descricao')
-                    for item in pecas_disponiveis:
-                        if hasattr(item, 'peca') and item.peca and item.quantidade > 0:
-                            item.ordem_servico = ordem_servico
-                            item.save()
+                    # 2. Atualiza a referência dos formsets com a OS salva
+                    formset_pecas.instance = ordem_servico
+                    formset_servicos.instance = ordem_servico
 
-                    # Processa Serviços
-                    servicos = formset_servicos.save(commit=False)
-                    for item in servicos:
-                        if hasattr(item, 'servico') and item.servico and item.quantidade > 0:
-                            item.os = ordem_servico
-                            item.save()
+                    # 3. O Django salva os itens, deleta os marcados (se houver) 
+                    # e aciona os seus métodos save() customizados de estoque automaticamente
+                    formset_pecas.save()
+                    formset_servicos.save()
 
+                    # 4. Atualiza totalizador
                     ordem_servico.atualizar_total()
                 
-                messages.success(request, "Ordem de Serviço criada com sucesso!")
+                messages.success(request, "Ordem de Serviço gravada com sucesso!")
                 return redirect('lista_os')
+            
             except ValueError as e:
-                messages.error(request, str(e))
+                # Captura os erros gerados pelas suas travas de Estoque no model
+                messages.error(request, f"Trava de Estoque: {str(e)}")
+            except Exception as e:
+                messages.error(request, f"Erro de persistência: {str(e)}")
+        else:
+            # BLINDAGEM CONTRA ERRO SILENCIOSO: Mostra na tela exatamente qual campo falhou
+            for error in form.errors.values():
+                messages.error(request, f"Erro na OS: {error}")
+            
+            for form_errado in formset_pecas.errors:
+                for erro in form_errado.values():
+                    messages.error(request, f"Erro nas Peças: {erro}")
+                    
+            for form_errado in formset_servicos.errors:
+                for erro in form_errado.values():
+                    messages.error(request, f"Erro nos Serviços: {erro}")
+                    
+            messages.warning(request, "Falha na validação. Os campos com erro foram impedidos de gravar.")
     else:
         form = OSForm()
-        formset_pecas = ItemPecaFormSet()
-        formset_servicos = ItemServicoFormSet()
+        formset_pecas = ItemPecaFormSet(prefix='itens_pecas')
+        formset_servicos = ItemServicoFormSet(prefix='itens_servicos')
 
-    # --- CORREÇÃO CRÍTICA AQUI ---
-    # Filtra o campo 'peca' dentro de cada formulário do formset antes de renderizar
+    # Filtro visual para a tela: exibe apenas peças disponíveis
     for f in formset_pecas.forms:
         f.fields['peca'].queryset = Pecas.objects.filter(ativo=True, estoque_atual__gt=0).order_by('descricao')
 
     return render(request, 'servicos/form_os.html', {
         'form': form, 
         'formset_pecas': formset_pecas, 
-        'formset_servicos': formset_servicos
+        'formset_servicos': formset_servicos,
+        'editando': False
     })
 
 @login_required
 def editar_os(request, pk):
     os_instancia = get_object_or_404(OrdemServico, pk=pk)
     
-    # Validação de status que definimos anteriormente
     if os_instancia.status != 'ORC':
         messages.warning(request, "Apenas orçamentos podem ser editados.")
         return redirect('lista_os')
 
     if request.method == 'POST':
-        # IMPORTANTE: Passar a 'instance' aqui é o que garante o UPDATE em vez de um novo INSERT
         form = OSForm(request.POST, instance=os_instancia)
-        formset_pecas = ItemPecaFormSet(request.POST, instance=os_instancia)
-        formset_servicos = ItemServicoFormSet(request.POST, instance=os_instancia)
+        formset_pecas = ItemPecaFormSet(request.POST, instance=os_instancia, prefix='itens_pecas')
+        formset_servicos = ItemServicoFormSet(request.POST, instance=os_instancia, prefix='itens_servicos')
 
         if form.is_valid() and formset_pecas.is_valid() and formset_servicos.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Guarda o cabeçalho
                     ordem_servico = form.save()
-                    
-                    # 2. Guarda os formsets diretamente (isso processa deletes e updates)
                     formset_pecas.save()
                     formset_servicos.save()
-                    
-                    # 3. Recalcula o total
                     ordem_servico.atualizar_total()
                 
                 messages.success(request, f"OS #{ordem_servico.id} atualizada com sucesso!")
                 return redirect('lista_os')
             except ValueError as e:
                 messages.error(request, str(e))
+        else:
+            messages.error(request, "Erro na validação do formulário de Edição. Revise os valores informados.")
     else:
-        # Carregamento inicial (GET)
         form = OSForm(instance=os_instancia)
-        formset_pecas = ItemPecaFormSet(instance=os_instancia)
-        formset_servicos = ItemServicoFormSet(instance=os_instancia)
+        formset_pecas = ItemPecaFormSet(instance=os_instancia, prefix='itens_pecas')
+        formset_servicos = ItemServicoFormSet(instance=os_instancia, prefix='itens_servicos')
 
     return render(request, 'servicos/form_os.html', {
         'form': form,
@@ -143,36 +160,26 @@ def alterar_status_os(request, os_id):
         os_obj.save()
         return JsonResponse({'status': 'success', 'novo_label': os_obj.get_status_display()})
     
-    
 @login_required
 def imprimir_os(request, pk):
     os_instancia = get_object_or_404(OrdemServico, pk=pk)
     return render(request, 'servicos/impressao_os.html', {'os': os_instancia})
 
-from django.db.models import Sum
-from django.utils import timezone
-from .models import OrdemServico, Pecas
-
 @login_required
 def dashboard(request):
     hoje = timezone.now().date()
     
-    # 1. Dados para os Cards
     os_aprovadas = OrdemServico.objects.filter(status='APR').count()
-    
     faturamento = OrdemServico.objects.filter(
         status='FIN', 
         data_entrada__month=hoje.month
     ).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-    
     pecas_sem_estoque = Pecas.objects.filter(estoque_atual__lte=0).count()
-    
     os_em_atraso = OrdemServico.objects.filter(
         status__in=['ORC', 'APR'], 
         data_entrada__date__lt=hoje
     ).count()
 
-    # 2. Últimas 5 Atividades (últimas OS criadas/modificadas)
     ultimas_atividades = OrdemServico.objects.all().order_by('-id')[:5]
 
     context = {
@@ -214,7 +221,6 @@ def editar_produto(request, pk):
         produto.descricao = request.POST.get('descricao')
         produto.preco_venda = request.POST.get('preco').replace(',', '.')
         produto.estoque_atual = request.POST.get('estoque')
-        # Captura o status do checkbox de ativação
         produto.ativo = 'ativo' in request.POST 
         
         produto.save()
@@ -226,8 +232,6 @@ def editar_produto(request, pk):
 @login_required
 def excluir_produto(request, pk):
     produto = get_object_or_404(Pecas, pk=pk)
-    
-    # Verifica se o produto está em alguma OS (tabela de itens da OS)
     em_uso = ItemPeca.objects.filter(peca=produto).exists()
 
     if em_uso:
