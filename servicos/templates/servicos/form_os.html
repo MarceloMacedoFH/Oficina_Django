@@ -9,7 +9,7 @@
       </ol>
     </nav>
 
-    <h2 class="mb-4 fw-bold text-dark">
+    <h2 class="mb-4 fw-bold">
         {% if editando %}
             <i class="bi bi-pencil-square"></i> Editar Ordem de Serviço
         {% else %}
@@ -50,7 +50,7 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="table-itens_pecas">
                 <thead class="table-light">
-                    <tr>
+                    <tr class="text-body-secondary">
                         <th style="width: 40%;">Peça</th>
                         <th style="width: 15%;">Qtd</th>
                         <th style="width: 20%;">V. Unitário</th>
@@ -132,9 +132,11 @@
                 {{ form.observacoes }}
             </div>
             <div class="col-md-4">
-                <div class="bg-dark p-3 rounded shadow-sm text-end">
-                    <label class="text-white-50 d-block small mb-1">VALOR TOTAL DA OS</label>
-                    <input type="text" id="total-geral" class="form-control form-control-lg text-end bg-transparent border-0 text-success fw-bold p-0" readonly value="R$ 0,00">
+                <div class="bg-body-secondary p-3 rounded shadow-sm text-end border border-primary">
+                    <label class="text-secondary d-block small mb-1">VALOR TOTAL DA OS</label>
+                    <input type="text" id="total-geral" 
+                           class="form-control form-control-lg text-end bg-transparent border-0 text-success fw-bold p-0" 
+                           readonly value="R$ 0,00">
                 </div>
             </div>
         </div>

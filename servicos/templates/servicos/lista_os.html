@@ -1,78 +1,90 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-list-task"></i> Lista de Ordens de Serviço</h2>
-        <a href="{% url 'nova_os' %}" class="btn btn-primary">
+        <h2 class="text-body-emphasis"><i class="bi bi-list-task text-primary"></i> Lista de Ordens de Serviço</h2>
+        <a href="{% url 'nova_os' %}" class="btn btn-primary shadow-sm">
             <i class="bi bi-plus-lg"></i> Nova OS
         </a>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nº OS</th>
-                        <th>Cliente</th>
-                        <th>Veículo</th>
-                        <th>Status</th>
-                        <th>Total</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for os in ordens %}
-                    <tr>
-                        <td><strong>#{{ os.id }}</strong></td>
-                        <td>{{ os.cliente.nome }}</td>
-                        <td>{{ os.veiculo.modelo }} ({{ os.veiculo.placa }})</td>
-                        <td>
-                            <span class="badge {% if os.status == 'ORC' %}bg-warning text-dark{% elif os.status == 'APR' %}bg-info{% elif os.status == 'FIN' %}bg-success{% else %}bg-danger{% endif %}">
-                                {{ os.get_status_display }}
-                            </span>
-                        </td>
-                        <td>R$ {{ os.valor_total }}</td>
-                        <td>
-                            <div class="btn-group">
-                                {% if os.status == 'ORC' %}
-                                    <a href="{% url 'editar_os' os.id %}" class="btn btn-sm btn-outline-primary" title="Editar Orçamento">
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-group-divider">
+                        <tr class="text-secondary">
+                            <th class="ps-4">Nº OS</th>
+                            <th>Cliente</th>
+                            <th>Veículo</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th class="text-center pe-4">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for os in ordens %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-body-emphasis">#{{ os.id }}</td>
+                            <td class="text-body">{{ os.cliente.nome }}</td>
+                            <td class="text-body-secondary small">
+                                {{ os.veiculo.modelo }} <br>
+                                <span class="badge bg-body-secondary text-body-secondary">{{ os.veiculo.placa }}</span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if os.status == 'ORC' %}bg-warning-subtle text-warning-emphasis border border-warning
+                                    {% elif os.status == 'APR' %}bg-info-subtle text-info-emphasis border border-info
+                                    {% elif os.status == 'FIN' %}bg-success-subtle text-success-emphasis border border-success
+                                    {% else %}bg-danger-subtle text-danger-emphasis border border-danger{% endif %}">
+                                    {{ os.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="fw-bold text-body-emphasis">
+                                R$ {{ os.valor_total|floatformat:2 }}
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group gap-1">
+                                    <a href="{% url 'editar_os' os.id %}" class="btn btn-sm btn-outline-secondary" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                {% else %}
-                                    <button class="btn btn-sm btn-outline-secondary" disabled title="Edição permitida apenas para Orçamentos">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                {% endif %}
 
-                                {% if os.status == 'ORC' %}
-                                    <button class="btn btn-sm btn-outline-success btn-status" data-os="{{ os.id }}" data-status="APR" title="Aprovar OS">
-                                        <i class="bi bi-check-circle"></i>
-                                    </button>
-                                {% endif %}
+                                    {% if os.status == 'ORC' %}
+                                        <button class="btn btn-sm btn-outline-success btn-status" data-os="{{ os.id }}" data-status="APR" title="Aprovar OS">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    {% endif %}
 
-                                {% if os.status != 'CAN' and os.status != 'FIN' %}
-                                    <button class="btn btn-sm btn-outline-danger btn-status" data-os="{{ os.id }}" data-status="CAN" title="Cancelar OS">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                {% endif %}
-                                
-                                <a href="{% url 'imprimir_os' os.id %}" class="btn btn-sm btn-outline-dark" title="Imprimir PDF">
-                                    <i class="bi bi-printer"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Nenhuma Ordem de Serviço encontrada.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                    {% if os.status != 'CAN' and os.status != 'FIN' %}
+                                        <button class="btn btn-sm btn-outline-danger btn-status" data-os="{{ os.id }}" data-status="CAN" title="Cancelar OS">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <a href="{% url 'imprimir_os' os.id %}" class="btn btn-sm btn-outline-primary" title="Imprimir PDF" target="_blank">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-5">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                Nenhuma Ordem de Serviço encontrada.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+<script src="/static/js/os_logic.js"></script>
+{% endblock %}
+
 {% endblock %}

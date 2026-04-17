@@ -151,7 +151,7 @@ def dashboard(request):
     hoje = timezone.now().date()
     
     # 1. Dados para os Cards
-    os_do_dia = OrdemServico.objects.filter(data_entrada__date=hoje).count()
+    os_aprovadas = OrdemServico.objects.filter(status='APR').count()
     
     faturamento = OrdemServico.objects.filter(
         status='FIN', 
@@ -169,7 +169,7 @@ def dashboard(request):
     ultimas_atividades = OrdemServico.objects.all().order_by('-id')[:5]
 
     context = {
-        'os_do_dia': os_do_dia,
+        'os_aprovadas': os_aprovadas,
         'faturamento': faturamento,
         'pecas_sem_estoque': pecas_sem_estoque,
         'os_em_atraso': os_em_atraso,

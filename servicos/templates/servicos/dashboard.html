@@ -1,41 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2 class="mb-4 fw-bold"><i class="bi bi-speedometer2"></i> Painel de Controle</h2>
+<div class="container mt-2">
+    <h2 class="mb-4 fw-bold text-body-emphasis">
+        <i class="bi bi-speedometer2"></i> Painel de Controle
+    </h2>
 
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card bg-primary text-white shadow-sm border-0 h-100">
                 <div class="card-body">
-                    <h6 class="text-uppercase small">OS do Dia</h6>
-                    <h2 class="fw-bold">{{ os_do_dia }}</h2>
-                    <i class="bi bi-calendar-check position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
+                    <h6 class="text-uppercase small opacity-75">OS Aprovadas</h6>
+                    <h2 class="fw-bold">{{ os_aprovadas }}</h2>
+                    <i class="bi bi-check-circle position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card bg-success text-white shadow-sm border-0 h-100">
                 <div class="card-body">
-                    <h6 class="text-uppercase small">Faturamento (Mês)</h6>
+                    <h6 class="text-uppercase small opacity-75">Faturamento (Mês)</h6>
                     <h2 class="fw-bold">R$ {{ faturamento|floatformat:2 }}</h2>
                     <i class="bi bi-cash-stack position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card bg-danger text-white shadow-sm border-0 h-100">
                 <div class="card-body">
-                    <h6 class="text-uppercase small">Peças Sem Estoque</h6>
+                    <h6 class="text-uppercase small opacity-75">Peças Sem Stock</h6>
                     <h2 class="fw-bold">{{ pecas_sem_estoque }}</h2>
                     <i class="bi bi-exclamation-triangle position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card bg-warning text-dark shadow-sm border-0 h-100">
                 <div class="card-body">
-                    <h6 class="text-uppercase small">OS em Atraso</h6>
+                    <h6 class="text-uppercase small opacity-75">OS em Atraso</h6>
                     <h2 class="fw-bold">{{ os_em_atraso }}</h2>
                     <i class="bi bi-clock-history position-absolute end-0 bottom-0 m-3 opacity-25" style="font-size: 2rem;"></i>
                 </div>
@@ -45,30 +50,45 @@
 
     <div class="row">
         <div class="col-md-7">
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white fw-bold">Fluxo de Ordens de Serviço</div>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent fw-bold border-0 py-3 text-body-emphasis">
+                    Fluxo de Ordens de Serviço
+                </div>
                 <div class="card-body">
-                    <canvas id="myChart" height="200"></canvas>
+                    <canvas id="myChart" height="250"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-md-5">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white fw-bold">Atividades Recentes</div>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent fw-bold border-0 py-3 text-body-emphasis">
+                    Atividades Recentes
+                </div>
                 <div class="list-group list-group-flush">
                     {% for os in ultimas_atividades %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1 fw-bold">OS #{{ os.id }} - {{ os.cliente.nome|truncatechars:15 }}</h6>
-                            <small class="text-muted">{{ os.data_entrada|date:"d/m" }}</small>
+                    <div class="list-group-item bg-transparent py-3 border-bottom">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <h6 class="mb-1 fw-bold text-body-emphasis">
+                                OS #{{ os.id }} - {{ os.cliente.nome|truncatechars:18 }}
+                            </h6>
+                            <small class="text-secondary">{{ os.data_entrada|date:"d/m" }}</small>
                         </div>
-                        <p class="mb-1 small text-secondary">{{ os.veiculo.modelo }} - {{ os.get_status_display }}</p>
+                        <p class="mb-1 small text-secondary">
+                            {{ os.veiculo.modelo }} - 
+                            <span class="text-primary fw-medium">{{ os.get_status_display }}</span>
+                        </p>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item bg-transparent text-center text-secondary py-4">
+                        Nenhuma atividade recente encontrada.
                     </div>
                     {% endfor %}
                 </div>
-                <div class="card-footer bg-white text-center">
-                    <a href="{% url 'lista_os' %}" class="btn btn-sm btn-link">Ver todas as OS</a>
+                <div class="card-footer bg-transparent border-0 text-center pb-3">
+                    <a href="{% url 'lista_os' %}" class="btn btn-sm btn-outline-primary rounded-pill px-4">
+                        Ver todas as OS
+                    </a>
                 </div>
             </div>
         </div>
@@ -77,23 +97,50 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Lógica para detetar o tema e ajustar as cores do gráfico
+    const getChartTheme = () => {
+        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark' || 
+                       window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        return {
+            grid: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+            text: isDark ? '#adb5bd' : '#6c757d'
+        };
+    };
+
+    const themeColors = getChartTheme();
     const ctx = document.getElementById('myChart').getContext('2d');
+    
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
             datasets: [{
                 label: 'Novas OS',
-                data: [12, 19, 3, 5, 2, 3], // Aqui você pode passar dados reais da view futuramente
+                data: [5, 12, 8, 15, 10, 6],
                 borderColor: '#0d6efd',
-                tension: 0.3,
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
                 fill: true,
-                backgroundColor: 'rgba(13, 110, 253, 0.1)'
+                tension: 0.4,
+                pointRadius: 4
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: false } }
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    grid: { color: themeColors.grid },
+                    ticks: { color: themeColors.text }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: themeColors.text }
+                }
+            }
         }
     });
 </script>
