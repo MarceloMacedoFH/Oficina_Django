@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
-from .models import OrdemServico, Pecas, Servico, ItemPeca, Veiculo
-from .forms import OSForm, ItemPecaFormSet, ItemServicoFormSet
+from .models import OrdemServico, Pecas, Servico, ItemPeca, Veiculo, Cliente
+from .forms import OSForm, ItemPecaFormSet, ItemServicoFormSet, ClienteForm, VeiculoForm
 
 @login_required
 def lista_ordens_servico(request): 
@@ -251,3 +251,38 @@ def excluir_produto(request, pk):
         messages.success(request, f"Produto '{produto.descricao}' excluído com sucesso.")
     
     return redirect('lista_estoque')
+
+
+@login_required
+def lista_clientes(request):
+    clientes = Cliente.objects.all().order_by('nome')
+    form = ClienteForm()
+    
+    if request.method == 'POST':
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Cliente cadastrado com sucesso!")
+            return redirect('lista_clientes')
+            
+    return render(request, 'servicos/lista_clientes.html', {
+        'clientes': clientes, 
+        'form': form
+    })
+
+@login_required
+def lista_veiculos(request):
+    veiculos = Veiculo.objects.all().order_by('-id')
+    form = VeiculoForm()
+    
+    if request.method == 'POST':
+        form = VeiculoForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Veículo cadastrado com sucesso!")
+            return redirect('lista_veiculos')
+            
+    return render(request, 'servicos/lista_veiculos.html', {
+        'veiculos': veiculos, 
+        'form': form
+    })

@@ -1,5 +1,5 @@
 from django import forms
-from .models import OrdemServico, ItemPeca, ItemServico,Veiculo
+from .models import OrdemServico, ItemPeca, ItemServico,Veiculo, Cliente
 
 class OSForm(forms.ModelForm):
     class Meta:
@@ -49,3 +49,27 @@ ItemServicoFormSet = forms.inlineformset_factory(
     }
 )
 for form in ItemServicoFormSet.form.base_fields.values(): form.required = False
+
+class ClienteForm(forms.ModelForm):
+    class Meta:
+        model = Cliente
+        fields = ['nome', 'cpf_cnpj', 'telefone', 'email', 'endereco']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cpf_cnpj': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'endereco': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class VeiculoForm(forms.ModelForm):
+    class Meta:
+        model = Veiculo
+        fields = ['cliente', 'modelo', 'placa', 'ano', 'cor']
+        widgets = {
+            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'modelo': forms.TextInput(attrs={'class': 'form-control'}),
+            'placa': forms.TextInput(attrs={'class': 'form-control'}),
+            'ano': forms.NumberInput(attrs={'class': 'form-control'}),
+            'cor': forms.TextInput(attrs={'class': 'form-control'}),
+        }
