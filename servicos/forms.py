@@ -53,7 +53,7 @@ for form in ItemServicoFormSet.form.base_fields.values(): form.required = False
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = ['nome', 'cpf_cnpj', 'telefone', 'email', 'endereco']
+        fields = ['nome', 'cpf_cnpj', 'telefone', 'email', 'endereco', 'ativo']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'cpf_cnpj': forms.TextInput(attrs={'class': 'form-control'}),

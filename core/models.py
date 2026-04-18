@@ -7,6 +7,7 @@ class Cliente(models.Model):
     email = models.EmailField(blank=True, null=True)
     endereco = models.TextField(blank=True, null=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome
@@ -20,6 +21,7 @@ class Veiculo(models.Model):
     ano = models.PositiveIntegerField()
     cor = models.CharField(max_length=20, blank=True, null=True)
     chassi = models.CharField(max_length=17, blank=True, null=True)
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.modelo} ({self.placa})"
