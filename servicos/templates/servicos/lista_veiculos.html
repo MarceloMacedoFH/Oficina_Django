@@ -43,14 +43,53 @@
                         </td>
                         <td class="text-end px-4">
                             <div class="btn-group">
-                                <a href="#" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalEditarVeiculo{{ veiculo.id }}" title="Editar">
                                     <i class="bi bi-pencil"></i>
-                                </a>
-                                <a href="#" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" title="Excluir">
                                     <i class="bi bi-trash"></i>
-                                </a>
+                                </button>
                             </div>
                         </td>
+                        <div class="modal fade" id="modalEditarVeiculo{{ veiculo.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content bg-body-tertiary border-0 shadow">
+                                    <form method="post" action="#">
+                                        {% csrf_token %}
+                                        <div class="modal-header border-bottom-0">
+                                            <h5 class="modal-title fw-bold">Editar Veículo: {{ veiculo.placa }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body p-4">
+                                            <div class="row g-3">
+                                                <div class="col-md-8">
+                                                    <label class="form-label fw-bold text-secondary small">MODELO / MARCA</label>
+                                                    <input type="text" name="modelo" class="form-control" value="{{ veiculo.modelo }}">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-bold text-secondary small">PLACA</label>
+                                                    <input type="text" name="placa" class="form-control" value="{{ veiculo.placa }}">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold text-secondary small">ANO</label>
+                                                    <input type="number" name="ano" class="form-control" value="{{ veiculo.ano }}">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold text-secondary small">COR</label>
+                                                    <input type="text" name="cor" class="form-control" value="{{ veiculo.cor }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 p-4">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </tr>
                     {% empty %}
                     {% endfor %}

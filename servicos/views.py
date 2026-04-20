@@ -227,15 +227,16 @@ def editar_produto(request, pk):
     
     if request.method == 'POST':
         produto.descricao = request.POST.get('descricao')
-        produto.preco_venda = request.POST.get('preco').replace(',', '.')
+        # Tratamento para garantir que a vírgula do front não quebre o Decimal
+        preco_raw = request.POST.get('preco').replace(',', '.')
+        produto.preco_venda = preco_raw
         produto.estoque_atual = request.POST.get('estoque')
         produto.ativo = 'ativo' in request.POST 
         
         produto.save()
         messages.success(request, f"Produto '{produto.descricao}' atualizado com sucesso!")
-        return redirect('lista_estoque')
     
-    return render(request, 'servicos/editar_produto.html', {'produto': produto})
+    return redirect('lista_estoque') # Sempre volta para a listagem
 
 @login_required
 def excluir_produto(request, pk):

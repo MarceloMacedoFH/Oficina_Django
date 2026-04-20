@@ -37,20 +37,38 @@
                         </td>
                         <td class="text-center pe-4">
                             <div class="btn-group">
-                                <button class="btn btn-sm btn-outline-secondary" title="Editar">
-                                    <a href="#" class="btn btn-sm btn-outline-secondary" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalEditarCliente{{ cliente.id }}" title="Editar">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" title="Excluir/Bloquear">
-                                    <a href="#" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deseja excluir ou bloquear este produto?')" title="Excluir/Bloquear">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
+                                <button class="btn btn-sm btn-outline-danger" title="Excluir/Bloquear">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                         </td>
+                        <div class="modal fade" id="modalEditarCliente{{ cliente.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <form method="post" action="#" class="modal-content">
+                                    {% csrf_token %}
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold">Editar Cliente: {{ cliente.nome }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label small">Nome</label>
+                                            <input type="text" name="nome" class="form-control" value="{{ cliente.nome }}">
+                                        </div>
+                                        </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </tr>
-                    {% empty %}
                     {% endfor %}
                 </tbody>
             </table>
