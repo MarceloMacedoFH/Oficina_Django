@@ -272,6 +272,39 @@ def lista_clientes(request):
     })
 
 @login_required
+def editar_cliente(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    
+    if request.method == 'POST':
+        cliente.nome = request.POST.get('nome')
+        # Tratamento para garantir que a vírgula do front não quebre o Decimal
+        cliente.cpf_cnpj = request.POST.get('cpfcnp')
+        cliente.telefone = request.POST.get('telefone')
+        cliente.email = request.POST.get('email')
+        cliente.endereco = request.POST.get('endereco')
+        cliente.ativo = 'ativo' in request.POST 
+        
+        cliente.save()
+        messages.success(request, f"Cliente '{cliente.nome}' atualizado com sucesso!")
+    
+    return redirect('lista_clientes') # Sempre volta para a listagem
+
+@login_required
+def excluir_cliente(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    em_uso = Cliente.objects.filter(nome=cliente).exists()
+
+    if em_uso:
+        cliente.ativo = False
+        cliente.save()
+        messages.warning(request, f"O cliente '{cliente.nome}' possui histórico em OS e foi apenas BLOQUEADO.")
+    else:
+        cliente.delete()
+        messages.success(request, f"cliente '{cliente.nome}' excluído com sucesso.")
+    
+    return redirect('lista_clientes')
+
+@login_required
 def lista_veiculos(request):
     veiculos = Veiculo.objects.all().order_by('-id')
     form = VeiculoForm()

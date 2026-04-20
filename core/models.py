@@ -11,6 +11,7 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.nome
+    
 
 class Veiculo(models.Model):
     # Relacionamos o veículo ao cliente. Se o cliente for deletado, os carros também são.
