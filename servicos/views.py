@@ -320,3 +320,34 @@ def lista_veiculos(request):
         'veiculos': veiculos, 
         'form': form
     })
+
+@login_required
+def editar_veiculo(request, pk):
+    carro = get_object_or_404(Veiculo, pk=pk)
+
+    if request.method == 'POST':        
+        cliente = request.POST.get('cliente')
+        carro.model = request.POST.get('modelo')
+        carro.placa = request.POST.get('placa')
+        carro.ano = request.POST.get('ano')
+        carro.cor = request.POST.get('cor')
+        carro.ativo = 'ativo' in request.POST 
+        carro.save()
+        messages.success(request, f"Veículo '{carro.modelo}' atualizado com sucesso!")
+    
+    return redirect('lista_veiculos') # Sempre volta para a listagem
+
+@login_required
+def excluir_veiculo(request, pk):
+    carro = get_object_or_404(Veiculo, pk=pk)
+    em_uso = OrdemServico.objects.filter(veiculo_id=carro).exists()
+
+    if em_uso:
+        carro.ativo = False
+        carro.save()
+        messages.warning(request, f"O veículo '{carro.modelo}' possui histórico em OS e foi apenas BLOQUEADO.")
+    else:
+        carro.delete()
+        messages.success(request, f"veículo '{carro.modelo}' excluído com sucesso.")
+    
+    return redirect('lista_veiculos')
