@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
-from .models import OrdemServico, Pecas, Servico, ItemPeca, Veiculo, Cliente
-from .forms import OSForm, ItemPecaFormSet, ItemServicoFormSet, ClienteForm, VeiculoForm
+from .models import OrdemServico, Veiculo, Cliente,Produto, ItemOS
+from .forms import OSForm, ClienteForm, VeiculoForm
 
 @login_required
 def lista_ordens_servico(request): 
@@ -17,69 +17,32 @@ def lista_ordens_servico(request):
 def nova_os(request):
     if request.method == 'POST':
         form = OSForm(request.POST)
-        
-        # TRUQUE DE ARQUITETURA: Criamos a OS em memória (commit=False)
-        # Isso permite validar os formsets filhos sem gravar o pai no banco ainda.
         os_temp = form.save(commit=False)
         
-        # Passamos a instância para que o Django cuide de ligar as ForeignKeys sozinho
-        formset_pecas = ItemPecaFormSet(request.POST, instance=os_temp, prefix='itens_pecas')
-        formset_servicos = ItemServicoFormSet(request.POST, instance=os_temp, prefix='itens_servicos')
-
-        if form.is_valid() and formset_pecas.is_valid() and formset_servicos.is_valid():
+        # Agora usamos apenas um formset para tudo (Peças e Serviços)
+        formset = ItemOSFormSet(request.POST, instance=os_temp)
+        
+        if form.is_valid() and formset.is_valid():
             try:
                 with transaction.atomic():
-                    # 1. Salva a OS no banco (agora ela tem um ID definitivo)
-                    ordem_servico = form.save()
-                    
-                    # 2. Atualiza a referência dos formsets com a OS salva
-                    formset_pecas.instance = ordem_servico
-                    formset_servicos.instance = ordem_servico
-
-                    # 3. O Django salva os itens, deleta os marcados (se houver) 
-                    # e aciona os seus métodos save() customizados de estoque automaticamente
-                    formset_pecas.save()
-                    formset_servicos.save()
-
-                    # 4. Atualiza totalizador
-                    ordem_servico.atualizar_total()
-                
-                messages.success(request, "Ordem de Serviço gravada com sucesso!")
+                    os_temp.save()
+                    formset.save()
+                    os_temp.atualizar_total()
+                messages.success(request, "Ordem de Serviço criada com sucesso!")
                 return redirect('lista_os')
-            
             except ValueError as e:
-                # Captura os erros gerados pelas suas travas de Estoque no model
-                messages.error(request, f"Trava de Estoque: {str(e)}")
-            except Exception as e:
-                messages.error(request, f"Erro de persistência: {str(e)}")
+                messages.error(request, str(e))
         else:
-            # BLINDAGEM CONTRA ERRO SILENCIOSO: Mostra na tela exatamente qual campo falhou
-            for error in form.errors.values():
-                messages.error(request, f"Erro na OS: {error}")
-            
-            for form_errado in formset_pecas.errors:
-                for erro in form_errado.values():
-                    messages.error(request, f"Erro nas Peças: {erro}")
-                    
-            for form_errado in formset_servicos.errors:
-                for erro in form_errado.values():
-                    messages.error(request, f"Erro nos Serviços: {erro}")
-                    
-            messages.warning(request, "Falha na validação. Os campos com erro foram impedidos de gravar.")
+            # Captura erros de validação (ex: estoque insuficiente vindo do model)
+            for error in formset.non_form_errors():
+                messages.error(request, error)
     else:
         form = OSForm()
-        formset_pecas = ItemPecaFormSet(prefix='itens_pecas')
-        formset_servicos = ItemServicoFormSet(prefix='itens_servicos')
-
-    # Filtro visual para a tela: exibe apenas peças disponíveis
-    for f in formset_pecas.forms:
-        f.fields['peca'].queryset = Pecas.objects.filter(ativo=True, estoque_atual__gt=0).order_by('descricao')
-
+        formset = ItemOSFormSet()
+        
     return render(request, 'servicos/form_os.html', {
         'form': form, 
-        'formset_pecas': formset_pecas, 
-        'formset_servicos': formset_servicos,
-        'editando': False
+        'formset': formset
     })
 
 @login_required
@@ -123,16 +86,12 @@ def editar_os(request, pk):
 
 @login_required
 def buscar_preco(request):
-    tipo = request.GET.get('tipo')
-    item_id = request.GET.get('id')
-    try:
-        if tipo == 'peca':
-            item = Pecas.objects.get(id=item_id)
-            return JsonResponse({'preco': float(item.preco_venda), 'estoque': item.estoque_atual})
-        item = Servico.objects.get(id=item_id)
-        return JsonResponse({'preco': float(item.valor_mao_de_obra)})
-    except:
-        return JsonResponse({'preco': 0}, status=404)
+    """Retorna o preço de venda de qualquer produto ou serviço"""
+    produto_id = request.GET.get('id')
+    if produto_id:
+        produto = get_object_or_404(Produto, id=produto_id)
+        return JsonResponse({'preco': float(produto.preco_venda)})
+    return JsonResponse({'preco': 0.00})
 
 @login_required
 def buscar_veiculos_cliente(request):
@@ -182,7 +141,7 @@ def dashboard(request):
         status='FIN', 
         data_entrada__month=hoje.month
     ).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
-    pecas_sem_estoque = Pecas.objects.filter(estoque_atual__lte=0).count()
+    pecas_sem_estoque = Produto.objects.filter(estoque_atual__lte=0).count()
     os_em_atraso = OrdemServico.objects.filter(
         status__in=['ORC', 'APR'], 
         data_entrada__date__lt=hoje
@@ -201,19 +160,25 @@ def dashboard(request):
 
 @login_required
 def lista_estoque(request):
-    pecas = Pecas.objects.all().order_by('descricao')
-    return render(request, 'servicos/estoque.html', {'pecas': pecas})
+    produto = Produto.objects.all().order_by('descricao')
+    return render(request, 'servicos/estoque.html', {'produtos': produto})
 
 @login_required
 def criar_produto(request):
     if request.method == 'POST':
         descricao = request.POST.get('descricao')
-        preco = request.POST.get('preco')
-        estoque = request.POST.get('estoque')
+        tipo = request.POST.get('tipo_produto')
+        um = request.POST.get('unidade_medida')
+        preco_compra = request.POST.get('preco_compra')
+        preco_raw = request.POST.get('preco_venda').replace(',', '.')
+        estoque = request.POST.get('estoque_atual')
 
-        Pecas.objects.create(
+        Produto.objects.create(
             descricao=descricao,
-            preco_venda=preco,
+            tipo_produto = tipo,
+            unidade_medida = um,
+            preco_compra = preco_compra,
+            preco_venda = preco_raw,
             estoque_atual=estoque
         )
         messages.success(request, "Produto cadastrado com sucesso!")
@@ -223,16 +188,18 @@ def criar_produto(request):
 
 @login_required
 def editar_produto(request, pk):
-    produto = get_object_or_404(Pecas, pk=pk)
+    produto = get_object_or_404(Produto, pk=pk)
     
     if request.method == 'POST':
         produto.descricao = request.POST.get('descricao')
-        # Tratamento para garantir que a vírgula do front não quebre o Decimal
-        preco_raw = request.POST.get('preco').replace(',', '.')
+        produto.tipo_produto = request.POST.get('tipo_produto')
+        produto.unidade_medida = request.POST.get('unidade_medida')
+        produto.preco_compra = request.POST.get('preco_compra')
+        preco_raw = request.POST.get('preco_venda').replace(',', '.')
         produto.preco_venda = preco_raw
-        produto.estoque_atual = request.POST.get('estoque')
+        produto.estoque_atual = request.POST.get('estoque_atual')
         produto.ativo = 'ativo' in request.POST 
-        
+
         produto.save()
         messages.success(request, f"Produto '{produto.descricao}' atualizado com sucesso!")
     
@@ -240,8 +207,8 @@ def editar_produto(request, pk):
 
 @login_required
 def excluir_produto(request, pk):
-    produto = get_object_or_404(Pecas, pk=pk)
-    em_uso = ItemPeca.objects.filter(peca=produto).exists()
+    produto = get_object_or_404(Produto, pk=pk)
+    em_uso = ItemOS.objects.filter(produto=produto).exists()
 
     if em_uso:
         produto.ativo = False
