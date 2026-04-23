@@ -6,7 +6,11 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 from .models import OrdemServico, Veiculo, Cliente,Produto, ItemOS
+<<<<<<< HEAD
 from .forms import ItemOSFormSet, OSForm, ClienteForm, VeiculoForm
+=======
+from .forms import OSForm, ClienteForm, VeiculoForm
+>>>>>>> 79f8ac44503c9ee796b56bca623064d3e2af1456
 
 @login_required
 def lista_ordens_servico(request): 
