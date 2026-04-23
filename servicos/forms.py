@@ -1,5 +1,6 @@
 from django import forms
-from .models import OrdemServico, ItemPeca, ItemServico,Veiculo, Cliente
+from django.forms import inlineformset_factory
+from .models import OrdemServico,Veiculo,Cliente,ItemOS,Produto
 
 class OSForm(forms.ModelForm):
     class Meta:
@@ -28,27 +29,31 @@ class OSForm(forms.ModelForm):
         elif self.instance.pk and self.instance.cliente:
             # Se for edição, traz apenas os veículos daquele cliente específico
             self.fields['veiculo'].queryset = self.instance.cliente.veiculos.all().distinct()
-ItemPecaFormSet = forms.inlineformset_factory(
-    OrdemServico, ItemPeca, fields=['peca', 'quantidade', 'preco_unitario'],
-    extra=1, can_delete=True, min_num=0, validate_min=False,
-    widgets={
-        'peca': forms.Select(attrs={'class': 'form-select item-select', 'data-tipo': 'peca'}),
-        'quantidade': forms.NumberInput(attrs={'class': 'form-control item-qty'}),
-        'preco_unitario': forms.NumberInput(attrs={'class': 'form-control item-price', 'readonly': 'readonly'}),
-    }
-)
-for form in ItemPecaFormSet.form.base_fields.values(): form.required = False
 
-ItemServicoFormSet = forms.inlineformset_factory(
-    OrdemServico, ItemServico, fields=['servico', 'quantidade', 'preco_unitario'],
-    extra=1, can_delete=True, min_num=0, validate_min=False,
-    widgets={
-        'servico': forms.Select(attrs={'class': 'form-select item-select', 'data-tipo': 'servico'}),
-        'quantidade': forms.NumberInput(attrs={'class': 'form-control item-qty'}),
-        'preco_unitario': forms.NumberInput(attrs={'class': 'form-control item-price', 'readonly': 'readonly'}),
-    }
+class ItemOSForm(forms.ModelForm):
+    class Meta:
+        model = ItemOS
+        fields = ['produto', 'quantidade', 'preco_unitario']
+        widgets = {
+            'produto': forms.Select(attrs={'class': 'form-select item-produto'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control item-quantidade', 'min': '1'}),
+            'preco_unitario': forms.NumberInput(attrs={'class': 'form-control item-preco', 'step': '0.01'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtra para que apenas produtos ativos apareçam no select da OS
+        self.fields['produto'].queryset = Produto.objects.filter(ativo=True).order_by('descricao')
+
+# A grande mágica: Substituímos o ItemPecaFormSet e ItemServicoFormSet por este único FormSet
+ItemOSFormSet = inlineformset_factory(
+    OrdemServico,
+    ItemOS,
+    form=ItemOSForm,
+    extra=1,          # Uma linha vazia por padrão
+    can_delete=True   # Permite remover itens da OS
 )
-for form in ItemServicoFormSet.form.base_fields.values(): form.required = False
+
 
 class ClienteForm(forms.ModelForm):
     class Meta:

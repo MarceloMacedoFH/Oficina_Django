@@ -15,7 +15,9 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-group-divider">
                         <tr class="text-secondary small">
+                            <th>CÓDIGO</th>
                             <th class="ps-4">DESCRIÇÃO</th>
+                            <th>UNIDADE</th>
                             <th>PREÇO VENDA</th>
                             <th>ESTOQUE ATUAL</th>
                             <th>STATUS</th>
@@ -23,17 +25,19 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for peca in pecas %}
-                        <tr class="{% if not peca.ativo %}opacity-50{% endif %}">
-                            <td class="ps-4 fw-bold text-body-emphasis">{{ peca.descricao }}</td>
-                            <td class="text-body">R$ {{ peca.preco_venda|floatformat:2 }}</td>
+                        {% for produto in produtos %}
+                        <tr class="{% if not produto.ativo %}opacity-50{% endif %}">
+                            <td class="ps-4 fw-bold text-body-emphasis">{{ produto.id }}</td>
+                            <td class="ps-4 fw-bold text-body-emphasis">{{ produto.descricao }}</td>
+                            <td class="ps-4 fw-bold text-body-emphasis">{{ produto.unidade_medida }}</td>
+                            <td class="text-body">R$ {{ produto.preco_venda|floatformat:2 }}</td>
                             <td>
-                                <span class="badge {% if peca.estoque_atual <= 0 %}bg-danger-subtle text-danger{% else %}bg-body-secondary text-body{% endif %}">
-                                    {{ peca.estoque_atual }} un
+                                <span class="badge {% if produto.estoque_atual <= 0 %}bg-danger-subtle text-danger{% else %}bg-body-secondary text-body{% endif %}">
+                                    {{ produto.estoque_atual }} un
                                 </span>
                             </td>
                             <td>
-                                {% if peca.ativo %}
+                                {% if produto.ativo %}
                                     <span class="badge bg-success-subtle text-success border border-success">Ativo</span>
                                 {% else %}
                                     <span class="badge bg-secondary-subtle text-secondary border border-secondary">Bloqueado</span>
@@ -41,19 +45,80 @@
                             </td>
                             <td class="text-center pe-4">
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-secondary" title="Editar">
-                                        <a href="{% url 'editar_produto' peca.id %}" class="btn btn-sm btn-outline-secondary" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalEditar{{ produto.id }}" title="Editar">
+                                        <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-outline-secondary" title="Excluir/Bloquear">
-                                        <a href="{% url 'excluir_produto' peca.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Deseja excluir ou bloquear este produto?')" title="Excluir/Bloquear">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-                                    </button>
+                                    <a href="{% url 'excluir_produto' produto.id %}" class="btn btn-sm btn-outline-danger" 
+                                       onclick="return confirm('Deseja excluir ou bloquear este produto?')" title="Excluir/Bloquear">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
+                        <div class="modal fade" id="modalEditar{{ produto.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content bg-body-tertiary">
+                                    <form method="post" action="{% url 'editar_produto' produto.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-header border-0">
+                                            <h5 class="modal-title fw-bold">Editar: {{ produto.descricao }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-12">
+                                                    <label class="form-label small text-secondary">Descrição</label>
+                                                    <input type="text" name="descricao" class="form-control" value="{{ produto.descricao }}" required>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small text-secondary">Tipo</label>
+                                                    <select name="tipo_produto" class="form-select">
+                                                        <option value="PA" {% if produto.tipo_produto == 'PA' %}selected{% endif %}>Produto Acabado</option>
+                                                        <option value="MP" {% if produto.tipo_produto == 'MP' %}selected{% endif %}>Matéria Prima</option>
+                                                        <option value="SV" {% if produto.tipo_produto == 'SV' %}selected{% endif %}>Serviço</option>
+                                                        <option value="MC" {% if produto.tipo_produto == 'MC' %}selected{% endif %}>Material Consumo</option>
+                                                        <option value="PI" {% if produto.tipo_produto == 'PI' %}selected{% endif %}>Produto Intermediário</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label small text-secondary">Unidade de Medida</label>
+                                                    <select name="unidade_medida" class="form-select">
+                                                        <option value="UN" {% if produto.unidade_medida == 'UN' %}selected{% endif %}>Unidade</option>
+                                                        <option value="CX" {% if produto.unidade_medida == 'CX' %}selected{% endif %}>Caixa</option>
+                                                        <option value="JG" {% if produto.unidade_medida == 'JG' %}selected{% endif %}>Jogo</option>
+                                                        <option value="MI" {% if produto.unidade_medida == 'MI' %}selected{% endif %}>Milheiro</option>
+                                                        <option value="M" {% if produto.unidade_medida == 'M' %}selected{% endif %}>Metros</option>
+                                                        <option value="KG" {% if produto.unidade_medida == 'KG' %}selected{% endif %}>Quilograma</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-secondary">Preço Compra</label>
+                                                    <input type="number" step="0.01" name="preco_compra" class="form-control" value="{{ produto.preco_compra|stringformat:'.2f' }}">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-secondary">Preço Venda</label>
+                                                    <input type="number" step="0.01" name="preco_venda" class="form-control" value="{{ produto.preco_venda|stringformat:'.2f' }}" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label small text-secondary">Estoque Atual</label>
+                                                    <input type="number" name="estoque_atual" class="form-control" value="{{ produto.estoque_atual }}">
+                                                </div>
+                                            </div>
+                                            <div class="form-check form-switch mt-3">
+                                                <input class="form-check-input" type="checkbox" name="ativo" id="ativo{{ produto.id }}" {% if produto.ativo %}checked{% endif %}>
+                                                <label class="form-check-label" for="ativo{{ produto.id }}">Item Ativo</label>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-0">
+                                            <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -62,35 +127,59 @@
     </div>
 </div>
 
-<!--- Tela para criar um novo cadastro -->
 <div class="modal fade" id="modalProduto" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content bg-body-tertiary">
             <form method="post" action="{% url 'criar_produto' %}">
                 {% csrf_token %}
                 <div class="modal-header border-0">
-                    <h5 class="modal-title">Cadastrar Novo Item</h5>
+                    <h5 class="modal-title fw-bold">Cadastrar Novo Item</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small text-secondary">Descrição do Produto</label>
-                        <input type="text" name="descricao" class="form-control" required>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label small text-secondary">Preço de Venda</label>
-                            <input type="number" step="0.01" name="preco" class="form-control" required>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label small text-secondary">Descrição</label>
+                            <input type="text" name="descricao" class="form-control" placeholder="Ex: Filtro de Óleo ou Mão de Obra Troca" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small text-secondary">Tipo</label>
+                            <select name="tipo_produto" class="form-select">
+                                <option value="PA">Produto Acabado</option>
+                                <option value="MP">Matéria Prima</option>
+                                <option value="SV">Serviço</option>
+                                <option value="MC">Material Consumo</option>
+                                <option value="PI">Produto Intermediário</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-secondary">Unidade de Medida</label>
+                            <select name="unidade_medida" class="form-select">
+                                <option value="UN">Unidade</option>
+                                <option value="CX">Caixa</option>
+                                <option value="JG">Jogo</option>
+                                <option value="MI">Milheiro</option>
+                                <option value="M">Metros</option>
+                                <option value="KG">Quilograma</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-secondary">Preço Compra (R$)</label>
+                            <input type="number" step="0.01" name="preco_compra" class="form-control" value="0.00">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small text-secondary">Preço Venda (R$)</label>
+                            <input type="number" step="0.01" name="preco_venda" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label small text-secondary">Estoque Inicial</label>
-                            <input type="number" name="estoque" class="form-control" value="0">
+                            <input type="number" name="estoque_atual" class="form-control" value="0">
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary px-4">Salvar Produto</button>
+                    <button type="submit" class="btn btn-primary px-4">Salvar Item</button>
                 </div>
             </form>
         </div>
