@@ -6,11 +6,9 @@ from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 from .models import OrdemServico, Veiculo, Cliente,Produto, ItemOS
-<<<<<<< HEAD
 from .forms import ItemOSFormSet, OSForm, ClienteForm, VeiculoForm
-=======
 from .forms import OSForm, ClienteForm, VeiculoForm
->>>>>>> 79f8ac44503c9ee796b56bca623064d3e2af1456
+
 
 @login_required
 def lista_ordens_servico(request): 
@@ -58,9 +56,12 @@ def editar_os(request, pk):
         return redirect('lista_os')
 
     if request.method == 'POST':
+        os_temp = form.save(commit=False)
         form = OSForm(request.POST, instance=os_instancia)
-        formset_pecas = ItemPecaFormSet(request.POST, instance=os_instancia, prefix='itens_pecas')
-        formset_servicos = ItemServicoFormSet(request.POST, instance=os_instancia, prefix='itens_servicos')
+
+        # Agora usamos apenas um formset para tudo (Peças e Serviços)
+        formset = ItemOSFormSet(request.POST, instance=os_temp)
+        
 
         if form.is_valid() and formset_pecas.is_valid() and formset_servicos.is_valid():
             try:
@@ -100,9 +101,8 @@ def buscar_preco(request):
 @login_required
 def buscar_veiculos_cliente(request):
     cliente_id = request.GET.get('cliente_id')
-    if not cliente_id:
-        return JsonResponse([], safe=False)
-    veiculos = Veiculo.objects.filter(cliente_id=cliente_id).values('id', 'modelo', 'placa').distinct()
+    # Importante: verifique se os campos 'id', 'modelo' e 'placa' existem no seu model Veiculo
+    veiculos = Veiculo.objects.filter(cliente_id=cliente_id).values('id', 'modelo', 'placa')
     return JsonResponse(list(veiculos), safe=False)
 
 @login_required

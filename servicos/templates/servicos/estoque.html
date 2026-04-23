@@ -32,9 +32,15 @@
                             <td class="ps-4 fw-bold text-body-emphasis">{{ produto.unidade_medida }}</td>
                             <td class="text-body">R$ {{ produto.preco_venda|floatformat:2 }}</td>
                             <td>
-                                <span class="badge {% if produto.estoque_atual <= 0 %}bg-danger-subtle text-danger{% else %}bg-body-secondary text-body{% endif %}">
-                                    {{ produto.estoque_atual }} un
-                                </span>
+                                {% if produto.tipo_produto != 'SV' %}
+                                    <span class="badge {% if produto.estoque_atual <= 0 %}bg-danger-subtle text-danger{% else %}bg-body-secondary text-body{% endif %}">
+                                        {{ produto.estoque_atual }} un
+                                    </span>
+                                {% else %}
+                                    <span class=" badge bg-body-secondary text-body">
+                                        Serviço
+                                    </span>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if produto.ativo %}

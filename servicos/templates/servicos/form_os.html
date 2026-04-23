@@ -17,7 +17,7 @@
         {% csrf_token %}
         
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3">
+            <div class="card-header bg-body-tertiary py-3">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>Informações Gerais</h5>
             </div>
             <div class="card-body">
@@ -43,7 +43,7 @@
         </div>
 
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-body-tertiary py-3 d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-tools me-2"></i>Itens da OS (Peças e Serviços)</h5>
             </div>
             <div class="card-body p-0">
@@ -105,18 +105,53 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // 1. Seletores dos campos principais
+    const selectCliente = document.getElementById('id_cliente');
+    const selectVeiculo = document.getElementById('id_veiculo');
+    
+    // 2. Seletores do Formset de itens
     const tabela = document.getElementById('tabela-itens').getElementsByTagName('tbody')[0];
     const addButton = document.getElementById('add-item');
-    const totalForms = document.getElementById('id_itens_os-TOTAL_FORMS'); // ID padrão do Django
+    const totalForms = document.querySelector('input[name$="-TOTAL_FORMS"]');
 
-    // Função para buscar preço via AJAX
+    // --- LÓGICA DE FILTRAGEM DE VEÍCULOS ---
+    if (selectCliente && selectVeiculo) {
+        selectCliente.addEventListener('change', function() {
+            const clienteId = this.value;
+
+            // Limpa o select de veículos e coloca a opção padrão
+            selectVeiculo.innerHTML = '<option value="">---------</option>';
+
+            if (clienteId) {
+                // Faz a chamada para a sua view 'buscar_veiculos_cliente'
+                fetch("{% url 'buscar_veiculos_cliente' %}?cliente_id=" + clienteId)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Erro na rede');
+                        return response.json();
+                    })
+                    .then(data => {
+                        data.forEach(veiculo => {
+                            const option = document.createElement('option');
+                            option.value = veiculo.id;
+                            // Exibe Modelo e Placa
+                            option.text = `${veiculo.modelo} - ${veiculo.placa}`;
+                            selectVeiculo.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Erro ao buscar veículos:', error));
+            }
+        });
+    }
+
+    // --- LÓGICA DE PREÇOS E TOTAIS ---
     function atualizarPreco(row) {
         const produtoSelect = row.querySelector('.item-produto');
         const precoInput = row.querySelector('.item-preco');
         const produtoId = produtoSelect.value;
 
         if (produtoId) {
-            fetch(`/buscar-preco/?id=${produtoId}`)
+            fetch("{% url 'buscar_preco'%}?id=" + produtoId)
+            //fetch("{% url 'buscar_veiculos_cliente' %}?cliente_id=" + clienteId)
                 .then(response => response.json())
                 .then(data => {
                     precoInput.value = data.preco;
@@ -125,7 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Função para calcular subtotal da linha e total geral
     function calcularSubtotal(row) {
         const qtd = parseFloat(row.querySelector('.item-quantidade').value) || 0;
         const preco = parseFloat(row.querySelector('.item-preco').value) || 0;
@@ -147,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('total-geral').innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
     }
 
-    // Eventos dinâmicos na tabela
+    // Eventos dinâmicos na tabela de itens
     tabela.addEventListener('change', function(e) {
         const row = e.target.closest('.item-row');
         if (e.target.classList.contains('item-produto')) {
@@ -158,24 +192,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Lógica de clonagem para "Adicionar Item"
+    // Lógica para adicionar nova linha
     addButton.addEventListener('click', function() {
+        // 1. Pega todas as linhas atuais
         let rows = document.querySelectorAll('.item-row');
-        let newRow = rows[0].cloneNode(true);
-        let formIdx = rows.length;
-
-        newRow.innerHTML = newRow.innerHTML.replace(/-0-/g, `-${formIdx}-`);
-        newRow.querySelector('.item-produto').value = "";
-        newRow.querySelector('.item-quantidade').value = 1;
-        newRow.querySelector('.item-preco').value = 0;
-        newRow.querySelector('.item-subtotal').value = "R$ 0,00";
+        let formIdx = parseInt(totalForms.value); // Usa o valor atual do contador do Django
         
+        // 2. Clona a primeira linha
+        let newRow = rows[0].cloneNode(true);
+        
+        // 3. Atualiza os IDs e Names dos campos (ex: de -0- para -1-)
+        // O regex abaixo procura por 'itemos_set-0' e substitui pelo índice atual
+        newRow.innerHTML = newRow.innerHTML.replace(/itemos_set-\d-/g, `itemos_set-${formIdx}-`);
+        
+        // 4. Limpa os valores da nova linha para que ela não venha preenchida
+        newRow.querySelectorAll('select, input').forEach(input => {
+            if (input.type !== 'hidden') {
+                input.value = "";
+                if (input.classList.contains('item-quantidade')) input.value = 1;
+                if (input.classList.contains('item-preco')) input.value = 0;
+            }
+        });
+    
+        // 5. Limpa o texto do subtotal visual
+        const subtotalDisplay = newRow.querySelector('.item-subtotal');
+        if (subtotalDisplay) subtotalDisplay.value = "R$ 0,00";
+    
+        // 6. Adiciona a nova linha na tabela e atualiza o contador do Django
         tabela.appendChild(newRow);
         totalForms.value = formIdx + 1;
     });
-
-    // Inicializa cálculos ao carregar (para edição)
-    document.querySelectorAll('.item-row').forEach(row => calcularSubtotal(row));
 });
 </script>
 {% endblock %}
