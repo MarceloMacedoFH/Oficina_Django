@@ -2,6 +2,22 @@
 {% load static %}
 
 {% block content %}
+
+{% if formset.errors %}
+        <div class="alert alert-danger">
+            <strong>Erro nos itens:</strong>
+            {% for error in formset.non_form_errors %} {{ error }} {% endfor %}
+            Verifique se todos os campos de Quantidade e Preço foram preenchidos corretamente.
+        </div>
+    {% endif %}
+    
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <strong>Erro no cabeçalho:</strong> Verifique os dados do Cliente e Veículo.
+        </div>
+    {% endif %}
+
+
 <div class="container mt-4 pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-body-emphasis">
@@ -13,6 +29,7 @@
         </a>
     </div>
 
+    
     <form method="post" id="form-os">
         {% csrf_token %}
         
@@ -194,31 +211,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Lógica para adicionar nova linha
     addButton.addEventListener('click', function() {
-        // 1. Pega todas as linhas atuais
         let rows = document.querySelectorAll('.item-row');
-        let formIdx = parseInt(totalForms.value); // Usa o valor atual do contador do Django
+        let formIdx = parseInt(totalForms.value);
         
-        // 2. Clona a primeira linha
+        // Clona a primeira linha
         let newRow = rows[0].cloneNode(true);
         
-        // 3. Atualiza os IDs e Names dos campos (ex: de -0- para -1-)
-        // O regex abaixo procura por 'itemos_set-0' e substitui pelo índice atual
-        newRow.innerHTML = newRow.innerHTML.replace(/itemos_set-\d-/g, `itemos_set-${formIdx}-`);
+        // 1. Descobre o prefixo real (ex: itemos_set ou itens_os)
+        // Isso evita o erro de "campo obrigatório" porque o name ficará correto
+        const prefix = totalForms.name.replace('-TOTAL_FORMS', '');
+        const regex = new RegExp(`${prefix}-\\d-`, 'g');
         
-        // 4. Limpa os valores da nova linha para que ela não venha preenchida
+        // 2. Atualiza os índices nos IDs e Names
+        newRow.innerHTML = newRow.innerHTML.replace(regex, `${prefix}-${formIdx}-`);
+        
+        // 3. Limpa os valores e remove IDs de banco de dados da linha clonada
         newRow.querySelectorAll('select, input').forEach(input => {
-            if (input.type !== 'hidden') {
+            // Se for o campo ID oculto, precisamos zerar para o Django criar um NOVO item
+            if (input.name.endsWith('-id')) {
+                input.value = "";
+            } else {
                 input.value = "";
                 if (input.classList.contains('item-quantidade')) input.value = 1;
                 if (input.classList.contains('item-preco')) input.value = 0;
             }
         });
     
-        // 5. Limpa o texto do subtotal visual
+        // 4. Limpa o subtotal visual
         const subtotalDisplay = newRow.querySelector('.item-subtotal');
         if (subtotalDisplay) subtotalDisplay.value = "R$ 0,00";
     
-        // 6. Adiciona a nova linha na tabela e atualiza o contador do Django
+        // 5. Adiciona à tabela e incrementa o contador global do Django
         tabela.appendChild(newRow);
         totalForms.value = formIdx + 1;
     });

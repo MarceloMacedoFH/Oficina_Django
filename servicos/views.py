@@ -33,11 +33,17 @@ def nova_os(request):
                 messages.success(request, "Ordem de Serviço criada com sucesso!")
                 return redirect('lista_os')
             except ValueError as e:
-                messages.error(request, str(e))
+                messages.error(request, f"Erro ao salvar no banco: {e}")
         else:
-            # Captura erros de validação (ex: estoque insuficiente vindo do model)
-            for error in formset.non_form_errors():
-                messages.error(request, error)
+            # Isso vai imprimir no terminal do VS Code exatamente qual campo falhou
+            print("ERROS NO FORM:", form.errors)
+            print("ERROS NO FORMSET:", formset.errors) 
+            
+            for i, f_err in enumerate(formset.errors):
+                if f_err:
+                    messages.error(request, f"Erro no Item {i+1}: {f_err}")
+            
+            messages.error(request, "Erro ao validar os dados. Verifique os campos.")
     else:
         form = OSForm()
         formset = ItemOSFormSet()
