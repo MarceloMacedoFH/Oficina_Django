@@ -114,28 +114,18 @@ def buscar_veiculos_cliente(request):
 @login_required
 def alterar_status_os(request, os_id):
     if request.method == 'POST':
-        novo_status = request.POST.get('status')
+        # get_object_or_404 garante que se a OS não existir, ele não quebra o servidor
         os_obj = get_object_or_404(OrdemServico, id=os_id)
-        status_anterior = os_obj.status
-
-        # Estorno de stock em cancelamento
-        if novo_status == 'CAN' and status_anterior != 'CAN':
-            for item in os_obj.itens_pecas.all():
-                item.peca.estoque_atual += item.quantidade
-                item.peca.save()
+        novo_status = request.POST.get('status')
         
-        # Re-validação de stock ao reabrir cancelada
-        elif status_anterior == 'CAN' and novo_status != 'CAN':
-            for item in os_obj.itens_pecas.all():
-                if item.peca.estoque_atual >= item.quantidade:
-                    item.peca.estoque_atual -= item.quantidade
-                    item.peca.save()
-                else:
-                    return JsonResponse({'status': 'error', 'message': f'Sem stock: {item.peca.descricao}'}, status=400)
-
-        os_obj.status = novo_status
-        os_obj.save()
-        return JsonResponse({'status': 'success', 'novo_label': os_obj.get_status_display()})
+        # Validação simples baseada no seu Models.py
+        if novo_status in ['ORC', 'APR', 'FIN', 'CAN']:
+            os_obj.status = novo_status
+            os_obj.save()
+            return redirect('lista_os')
+        return redirect('lista_os')
+    
+    return redirect('lista_os')
     
 @login_required
 def imprimir_os(request, pk):

@@ -3,6 +3,11 @@
  * Versão Final: 100% Funcional
  */
 
+function obterTokenCSRF() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+           document.cookie.match(/csrftoken=([\w-]+)/)?.[1];
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 
     // Auxiliar para obter o Token CSRF do Django
@@ -131,39 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- 4. ALTERAÇÃO DE STATUS (LISTAGEM) ---
-    document.addEventListener('click', function(e) {
-        // O segredo está aqui: .closest() sobe na hierarquia até encontrar o botão
-        const btn = e.target.closest('.btn-status');
-        
-        // Se o clique foi no botão ou em qualquer coisa dentro dele (como o ícone)
-        if (btn) {
-            e.preventDefault();
-            const osId = btn.dataset.os;
-            const novoStatus = btn.dataset.status;
-
-            if (confirm(`Deseja alterar o status da OS #${osId} para ${novoStatus}?`)) {
-                const formDados = new FormData();
-                formDados.append('status', novoStatus);
-                formDados.append('csrfmiddlewaretoken', obterTokenCSRF());
-
-                fetch(`/ordens/alterar-status/${osId}/`, {
-                    method: 'POST',
-                    body: formDados,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(async response => {
-                    const data = await response.json();
-                    if (!response.ok) throw new Error(data.message);
-                    window.location.reload(); // Recarrega para atualizar a cor do badge
-                })
-                .catch(erro => {
-                    alert(`❌ OPERAÇÃO RECUSADA: ${erro.message}`);
-                });
-            }
-        }
-    });
-
     // --- 5. FILTRO DINÂMICO DE VEÍCULOS POR CLIENTE ---
     // No seu os_logic.js
     const selectCliente = document.querySelector('select[name="cliente"]');
@@ -203,6 +175,56 @@ document.addEventListener('DOMContentLoaded', function() {
                     })
                     .catch(err => console.error('Erro ao buscar veículos:', err));
             }
+        });
+    }
+});
+
+
+//Lógica para preencher a modal do alterar Status
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Lógica para preencher o Modal quando abrir
+    const modalStatus = document.getElementById('modalStatus');
+    if (modalStatus) {
+        modalStatus.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget; // Botão que acionou o modal
+            
+            // Extrai as informações dos atributos data-
+            const osId = button.getAttribute('data-os-id');
+            const cliente = button.getAttribute('data-os-cliente');
+            const statusAtual = button.getAttribute('data-os-status');
+
+            // Preenche os campos do modal
+            document.getElementById('modal-os-id-title').textContent = osId;
+            document.getElementById('modal-os-id-input').value = osId;
+            document.getElementById('modal-os-cliente').textContent = cliente;
+            document.getElementById('modal-os-status-select').value = statusAtual;
+        });
+    }
+
+    // 2. Lógica para salvar o novo status
+    const btnSalvarStatus = document.getElementById('btn-salvar-status');
+    if (btnSalvarStatus) {
+        btnSalvarStatus.addEventListener('click', function() {
+            const osId = document.getElementById('modal-os-id-input').value;
+            const novoStatus = document.getElementById('modal-os-status-select').value;
+            const csrfToken = obterTokenCSRF();
+
+            fetch(`/alterar-status/${osId}/`, { // Garanta que a barra inicial e final existam
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `status=${novoStatus}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload(); // Recarrega para ver a mudança
+                } else {
+                    alert('Erro ao atualizar status.');
+                }
+            })
+            .catch(error => console.error('Erro:', error));
         });
     }
 });

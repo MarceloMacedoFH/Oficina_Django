@@ -50,17 +50,12 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
 
-                                    {% if os.status == 'ORC' %}
-                                        <button class="btn btn-sm btn-outline-success btn-status" data-os="{{ os.id }}" data-status="APR" title="Aprovar OS">
-                                            <i class="bi bi-check-circle"></i>
-                                        </button>
-                                    {% endif %}
-
-                                    {% if os.status != 'CAN' and os.status != 'FIN' %}
-                                        <button class="btn btn-sm btn-outline-danger btn-status" data-os="{{ os.id }}" data-status="CAN" title="Cancelar OS">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalStatus{{ os.id }}"
+                                            title="Alterar Status">
+                                        <i class="bi bi-arrow-left-right"></i>
+                                    </button>
                                     
                                     <a href="{% url 'imprimir_os' os.id %}" class="btn btn-sm btn-outline-primary" title="Imprimir PDF" target="_blank">
                                         <i class="bi bi-printer"></i>
@@ -68,6 +63,43 @@
                                 </div>
                             </td>
                         </tr>
+
+                        <div class="modal fade" id="modalStatus{{ os.id }}" tabindex="-1" aria-labelledby="modalStatusLabel{{ os.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content bg-body-tertiary">
+                                    <form method="post" action="{% url 'alterar_status_os' os.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-header border-0">
+                                            <h5 class="modal-title fw-bold" id="modalStatusLabel{{ os.id }}">Alterar Status da OS #{{ os.id }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row g-3">
+                                                <div class="col-md-12">
+                                                    <p><strong>CLIENTE:</strong> {{ os.cliente.nome }}</p>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <p><strong>VEÍCULO:</strong> {{ os.veiculo.modelo }}</p>
+                                                </div>
+                                                <div class="col-md-12">
+                                                    <label class="form-label small text-secondary">NOVO STATUS</label>
+                                                    <select class="form-select" name="status">
+                                                        <option value="ORC" {% if os.status == 'ORC' %}selected{% endif %}>Orçamento</option>
+                                                        <option value="APR" {% if os.status == 'APR' %}selected{% endif %}>Aprovado</option>
+                                                        <option value="FIN" {% if os.status == 'FIN' %}selected{% endif %}>Finalizado</option>
+                                                        <option value="CAN" {% if os.status == 'CAN' %}selected{% endif %}>Cancelado</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-0">
+                                            <button type="button" class="btn btn-link text-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary px-4">Salvar Alterações</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center text-secondary py-5">
