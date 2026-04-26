@@ -34,8 +34,9 @@
                             </td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if os.status == 'ORC' %}bg-warning-subtle text-warning-emphasis border border-warning
+                                    {% if os.status == 'ORC' %}bg-secondary-subtle text-secondary-emphasis border border-secondary
                                     {% elif os.status == 'APR' %}bg-info-subtle text-info-emphasis border border-info
+                                    {% elif os.status == 'PRO' %}bg-warning-subtle text-warning-emphasis border border-warning
                                     {% elif os.status == 'FIN' %}bg-success-subtle text-success-emphasis border border-success
                                     {% else %}bg-danger-subtle text-danger-emphasis border border-danger{% endif %}">
                                     {{ os.get_status_display }}
@@ -51,8 +52,17 @@
                                     </a>
 
                                     <button type="button" class="btn btn-sm btn-outline-info" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalStatus{{ os.id }}"
+                                            {% if os.status == 'FIN' or os.status == 'CAN' %}
+                                                onclick="Swal.fire({
+                                                    icon: 'error',
+                                                    title: 'Atenção!',
+                                                    text: 'Esta OS está {{os.get_status_display}} e não pode ser alterada.',
+                                                    confirmButtonColor: '#0d6efd'
+                                                })" 
+                                            {% else %}
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalStatus{{ os.id }}"
+                                            {% endif %}
                                             title="Alterar Status">
                                         <i class="bi bi-arrow-left-right"></i>
                                     </button>
@@ -82,12 +92,12 @@
                                                     <p><strong>VEÍCULO:</strong> {{ os.veiculo.modelo }}</p>
                                                 </div>
                                                 <div class="col-md-12">
-                                                    <label class="form-label small text-secondary">NOVO STATUS</label>
+                                                    <label class="form-label small "><strong>NOVO STATUS</strong></label>
                                                     <select class="form-select" name="status">
-                                                        <option value="ORC" {% if os.status == 'ORC' %}selected{% endif %}>Orçamento</option>
-                                                        <option value="APR" {% if os.status == 'APR' %}selected{% endif %}>Aprovado</option>
-                                                        <option value="FIN" {% if os.status == 'FIN' %}selected{% endif %}>Finalizado</option>
-                                                        <option value="CAN" {% if os.status == 'CAN' %}selected{% endif %}>Cancelado</option>
+                                                        {% if os.status != 'APR' and os.status != 'PRO' %}<option value="APR">Aprovada</option> {% endif %}
+                                                        {% if os.status != 'PRO' %}<option value="PRO" >Em Processo</option> {% endif %}
+                                                        <option value="FIN" >Finalizada</option>
+                                                        <option value="CAN" >Cancelada</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -117,6 +127,8 @@
 
 {% block extra_js %}
 <script src="/static/js/os_logic.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-dark@5/dark.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% endblock %}
 
 {% endblock %}

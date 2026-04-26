@@ -115,14 +115,16 @@ def buscar_veiculos_cliente(request):
 def alterar_status_os(request, os_id):
     if request.method == 'POST':
         # get_object_or_404 garante que se a OS não existir, ele não quebra o servidor
-        os_obj = get_object_or_404(OrdemServico, id=os_id)
+        os = get_object_or_404(OrdemServico, id=os_id)
         novo_status = request.POST.get('status')
-        
-        # Validação simples baseada no seu Models.py
-        if novo_status in ['ORC', 'APR', 'FIN', 'CAN']:
-            os_obj.status = novo_status
-            os_obj.save()
+        status_atu = os.status
+
+        if status_atu in ['FIN', 'CAN']:
+            messages.error(request, f"Esta OS está {os.get_status_display()} e não pode ser alterada.")
             return redirect('lista_os')
+        
+        os.status = novo_status
+        os.save()
         return redirect('lista_os')
     
     return redirect('lista_os')

@@ -40,9 +40,10 @@ class Produto(models.Model):
 class OrdemServico(models.Model):
     STATUS_CHOICES = (
         ('ORC', 'Orçamento'),
-        ('APR', 'Aprovado'),
-        ('FIN', 'Finalizado'),
-        ('CAN', 'Cancelado'),
+        ('APR', 'Aprovada'),
+        ('PRO', 'Em Processo'),
+        ('FIN', 'Finalizada'),
+        ('CAN', 'Cancelada'),
     )
 
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
