@@ -7,8 +7,6 @@ from django.db.models import Sum
 from django.utils import timezone
 from .models import OrdemServico, Veiculo, Cliente,Produto, ItemOS
 from .forms import ItemOSFormSet, OSForm, ClienteForm, VeiculoForm
-from .forms import OSForm, ClienteForm, VeiculoForm
-
 
 @login_required
 def lista_ordens_servico(request): 
@@ -62,37 +60,30 @@ def editar_os(request, pk):
         return redirect('lista_os')
 
     if request.method == 'POST':
-        os_temp = form.save(commit=False)
         form = OSForm(request.POST, instance=os_instancia)
-
-        # Agora usamos apenas um formset para tudo (Peças e Serviços)
-        formset = ItemOSFormSet(request.POST, instance=os_temp)
+        formset = ItemOSFormSet(request.POST, instance=os_instancia)
         
-
-        if form.is_valid() and formset_pecas.is_valid() and formset_servicos.is_valid():
+        if form.is_valid() and formset.is_valid():
             try:
                 with transaction.atomic():
-                    ordem_servico = form.save()
-                    formset_pecas.save()
-                    formset_servicos.save()
-                    ordem_servico.atualizar_total()
-                
-                messages.success(request, f"OS #{ordem_servico.id} atualizada com sucesso!")
+                    form.save()
+                    formset.save()
+                    os_instancia.atualizar_total()
+                messages.success(request, f"Ordem de Serviço #{pk} atualizada com sucesso!")
                 return redirect('lista_os')
-            except ValueError as e:
-                messages.error(request, str(e))
-        else:
-            messages.error(request, "Erro na validação do formulário de Edição. Revise os valores informados.")
+            except Exception as e:
+                messages.error(request, f"Erro ao salvar: {e}")
     else:
+        # ESTA PARTE É A QUE ESTAVA FALTANDO:
+        # Define o form e o formset para quando a página for carregada (GET)
         form = OSForm(instance=os_instancia)
-        formset_pecas = ItemPecaFormSet(instance=os_instancia, prefix='itens_pecas')
-        formset_servicos = ItemServicoFormSet(instance=os_instancia, prefix='itens_servicos')
+        formset = ItemOSFormSet(instance=os_instancia)
 
+    # O dicionário de contexto agora sempre terá 'form' e 'formset' definidos
     return render(request, 'servicos/form_os.html', {
         'form': form,
-        'formset_pecas': formset_pecas,
-        'formset_servicos': formset_servicos,
-        'editando': True
+        'formset': formset,
+        'os': os_instancia
     })
 
 @login_required
