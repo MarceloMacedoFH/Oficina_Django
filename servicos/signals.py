@@ -10,7 +10,7 @@ def gerar_financeiro(sender, instance, created, **kwargs):
     if instance.status == 'FIN' and not Lancamento.objects.filter(os=instance).exists():
         Lancamento.objects.create(
             descricao=f"Recebimento OS #{instance.id} - Placa {instance.veiculo.placa}",
-            valor=instance.total,
+            valor=instance.valor_total,
             tipo='ENT',
             data_vencimento=timezone.now().date(),
             os=instance,

@@ -4,7 +4,7 @@
 {% block content %}
 
     {% if formset.errors %}
-        <div class="alert alert-danger">
+        <div class="ert alert-danger">
             <strong>Erro nos itens:</strong>
             {% for error in formset.non_form_errors %} {{ error }} {% endfor %}
             Verifique se todos os campos de Quantidade e Preço foram preenchidos corretamente.
