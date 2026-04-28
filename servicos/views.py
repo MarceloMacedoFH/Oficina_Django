@@ -131,8 +131,10 @@ def dashboard(request):
     
     os_aprovadas = OrdemServico.objects.filter(status='APR').count()
     faturamento = OrdemServico.objects.filter(
-        status='FIN', 
-        data_entrada__month=hoje.month
+        status='FIN',
+        financeiro__pago=True,
+        financeiro__data_pagamento__month=hoje.month,
+        financeiro__data_pagamento__year=hoje.year
     ).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     pecas_sem_estoque = Produto.objects.filter(estoque_atual__lte=0).count()
     os_em_atraso = OrdemServico.objects.filter(
