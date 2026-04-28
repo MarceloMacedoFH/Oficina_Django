@@ -49,9 +49,12 @@ class OrdemServico(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE)
     data_entrada = models.DateTimeField(auto_now_add=True)
+    data_entrega = models.DateTimeField(blank=True, null=True)
     status = models.CharField(max_length=3, choices=STATUS_CHOICES, default='ORC')
     valor_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     observacoes = models.TextField(blank=True, null=True)
+    data_alteracao = models.DateTimeField(blank=True, null=True)
+    data_cancelamento = models.DateTimeField(blank=True, null=True)
 
     def atualizar_total(self):
         """Soma o total de itens (peças e serviços) e atualiza a OS"""

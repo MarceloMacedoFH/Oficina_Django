@@ -5,11 +5,12 @@ from .models import OrdemServico,Veiculo,Cliente,ItemOS,Produto
 class OSForm(forms.ModelForm):
     class Meta:
         model = OrdemServico
-        fields = ['cliente', 'veiculo', 'status', 'observacoes']
+        fields = ['cliente', 'veiculo', 'status', 'data_entrega' , 'observacoes']
         widgets = {
             'cliente': forms.Select(attrs={'class': 'form-select'}),
             'veiculo': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'data_entrega': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'},format='%Y-%m-%d'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -18,6 +19,10 @@ class OSForm(forms.ModelForm):
         
         # 1. Começa com a lista vazia por segurança
         self.fields['veiculo'].queryset = Veiculo.objects.none()
+        
+        if self.instance.data_entrega:
+            # Garante que o valor apareça no campo ao abrir para editar
+            self.initial['data_entrega'] = self.instance.data_entrega.strftime('%Y-%m-%d')
 
         # 2. Se houver um cliente já selecionado (Edição ou erro de POST)
         if 'cliente' in self.data:
