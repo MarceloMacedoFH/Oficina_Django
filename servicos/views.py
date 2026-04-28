@@ -136,8 +136,8 @@ def dashboard(request):
     ).aggregate(Sum('valor_total'))['valor_total__sum'] or 0
     pecas_sem_estoque = Produto.objects.filter(estoque_atual__lte=0).count()
     os_em_atraso = OrdemServico.objects.filter(
-        status__in=['ORC', 'APR'], 
-        data_entrada__date__lt=hoje
+        status__in=['APR'], 
+        data_entrega__date__lt=hoje
     ).count()
 
     ultimas_atividades = OrdemServico.objects.all().order_by('-id')[:5]
