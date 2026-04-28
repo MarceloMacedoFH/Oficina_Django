@@ -3,7 +3,7 @@
 
 {% block content %}
 
-{% if formset.errors %}
+    {% if formset.errors %}
         <div class="alert alert-danger">
             <strong>Erro nos itens:</strong>
             {% for error in formset.non_form_errors %} {{ error }} {% endfor %}
@@ -17,7 +17,6 @@
         </div>
     {% endif %}
 
-
 <div class="container mt-4 pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-body-emphasis">
@@ -29,7 +28,6 @@
         </a>
     </div>
 
-    
     <form method="post" id="form-os">
         {% csrf_token %}
         
@@ -77,26 +75,28 @@
                                 <th style="width: 15%;">QTD</th>
                                 <th style="width: 15%;">PREÇO UNIT.</th>
                                 <th style="width: 15%;">SUBTOTAL</th>
-                                <th class="text-center pe-4" style="width: 10%;">AÇÃO</th>
+                                <th class="text-center pe-4" style="width: 10%;">EXCLUIR</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item_form in formset %}
                             <tr class="item-row">
                                 {% for hidden in item_form.hidden_fields %} {{ hidden }} {% endfor %}
-                                <td class="ps-4">{{ item_form.produto }}</td>
+                                <td class="ps-4">
+                                    <div style="display: none;">
+                                        {{ item_form.DELETE }}
+                                    </div>
+                                    {{ item_form.produto }}
+                                </td>
                                 <td>{{ item_form.quantidade }}</td>
                                 <td>{{ item_form.preco_unitario }}</td>
                                 <td>
                                     <input type="text" class="form-control-plaintext fw-bold item-subtotal" readonly value="R$ 0,00">
                                 </td>
                                 <td class="text-center pe-4">
-                                    {% if formset.can_delete %}
-                                        <div class="form-check d-none">{{ item_form.DELETE }}</div>
-                                        <button type="button" class="btn btn-outline-danger btn-sm remove-item">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    {% endif %}
+                                    <button type="button" class="btn btn-outline-danger btn-sm remove-item">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -126,129 +126,152 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Seletores dos campos principais
-    const selectCliente = document.getElementById('id_cliente');
-    const selectVeiculo = document.getElementById('id_veiculo');
-    
-    // 2. Seletores do Formset de itens
-    const tabela = document.getElementById('tabela-itens').getElementsByTagName('tbody')[0];
+    // 1. Seletores Principais
+    const selectCliente = document.querySelector('select[name="cliente"]');
+    const selectVeiculo = document.querySelector('select[name="veiculo"]');
+    const tabelaCorpo = document.querySelector('#tabela-itens tbody');
     const addButton = document.getElementById('add-item');
     const totalForms = document.querySelector('input[name$="-TOTAL_FORMS"]');
 
-    // --- LÓGICA DE FILTRAGEM DE VEÍCULOS ---
+    // --- FILTRO DE VEÍCULOS ---
     if (selectCliente && selectVeiculo) {
         selectCliente.addEventListener('change', function() {
             const clienteId = this.value;
-
-            // Limpa o select de veículos e coloca a opção padrão
             selectVeiculo.innerHTML = '<option value="">---------</option>';
 
             if (clienteId) {
-                // Faz a chamada para a sua view 'buscar_veiculos_cliente'
-                fetch("{% url 'buscar_veiculos_cliente' %}?cliente_id=" + clienteId)
-                    .then(response => {
-                        if (!response.ok) throw new Error('Erro na rede');
-                        return response.json();
-                    })
+                fetch(`{% url 'buscar_veiculos_cliente' %}?cliente_id=${clienteId}`)
+                    .then(res => res.json())
                     .then(data => {
-                        data.forEach(veiculo => {
-                            const option = document.createElement('option');
-                            option.value = veiculo.id;
-                            // Exibe Modelo e Placa
-                            option.text = `${veiculo.modelo} - ${veiculo.placa}`;
-                            selectVeiculo.appendChild(option);
+                        data.forEach(v => {
+                            const opt = new Option(`${v.modelo} - ${v.placa}`, v.id);
+                            selectVeiculo.add(opt);
                         });
                     })
-                    .catch(error => console.error('Erro ao buscar veículos:', error));
+                    .catch(err => console.error('Erro ao buscar veículos:', err));
             }
         });
     }
 
-    // --- LÓGICA DE PREÇOS E TOTAIS ---
-    function atualizarPreco(row) {
-        const produtoSelect = row.querySelector('.item-produto');
-        const precoInput = row.querySelector('.item-preco');
-        const produtoId = produtoSelect.value;
-
-        if (produtoId) {
-            fetch("{% url 'buscar_preco'%}?id=" + produtoId)
-            //fetch("{% url 'buscar_veiculos_cliente' %}?cliente_id=" + clienteId)
-                .then(response => response.json())
-                .then(data => {
-                    precoInput.value = data.preco;
-                    calcularSubtotal(row);
-                });
-        }
+    // --- LÓGICA DE CÁLCULOS ---
+    function formatarMoeda(valor) {
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    function calcularSubtotal(row) {
-        const qtd = parseFloat(row.querySelector('.item-quantidade').value) || 0;
-        const preco = parseFloat(row.querySelector('.item-preco').value) || 0;
-        const subtotalDisplay = row.querySelector('.item-subtotal');
-        
-        const subtotal = qtd * preco;
-        subtotalDisplay.value = `R$ ${subtotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        
-        atualizarTotalGeral();
-    }
-
-    function atualizarTotalGeral() {
-        let total = 0;
+    function calcularTotais() {
+        let totalGeral = 0;
         document.querySelectorAll('.item-row').forEach(row => {
-            const qtd = parseFloat(row.querySelector('.item-quantidade').value) || 0;
-            const preco = parseFloat(row.querySelector('.item-preco').value) || 0;
-            total += (qtd * preco);
+            // Ignora linhas marcadas para exclusão se houver
+            if (row.style.display === 'none') return;
+
+            const qtd = parseFloat(row.querySelector('input[name$="-quantidade"]').value) || 0;
+            const preco = parseFloat(row.querySelector('input[name$="-preco_unitario"]').value) || 0;
+            const subtotal = qtd * preco;
+            
+            const campoSubtotal = row.querySelector('.item-subtotal');
+            if (campoSubtotal) campoSubtotal.value = formatarMoeda(subtotal);
+            
+            totalGeral += subtotal;
         });
-        document.getElementById('total-geral').innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        document.getElementById('total-geral').innerText = formatarMoeda(totalGeral);
     }
 
-    // Eventos dinâmicos na tabela de itens
-    tabela.addEventListener('change', function(e) {
-        const row = e.target.closest('.item-row');
-        if (e.target.classList.contains('item-produto')) {
-            atualizarPreco(row);
+    // --- BUSCA DE PREÇO (AJAX) ---
+    tabelaCorpo.addEventListener('change', function(e) {
+        const target = e.target;
+        const row = target.closest('.item-row');
+
+        // Se mudar o produto, busca o preço
+        if (target.name.endsWith('-produto')) {
+            const produtoId = target.value;
+            if (produtoId) {
+                fetch(`{% url 'buscar_preco' %}?id=${produtoId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const precoInput = row.querySelector('input[name$="-preco_unitario"]');
+                        if (precoInput) precoInput.value = data.preco;
+                        calcularTotais();
+                    });
+            }
         }
-        if (e.target.classList.contains('item-quantidade') || e.target.classList.contains('item-preco')) {
-            calcularSubtotal(row);
+
+        // Se mudar preço ou quantidade, recalcula
+        if (target.name.endsWith('-quantidade') || target.name.endsWith('-preco_unitario')) {
+            calcularTotais();
         }
     });
 
-    // Lógica para adicionar nova linha
+    // --- ADICIONAR ITEM ---
     addButton.addEventListener('click', function() {
-        let rows = document.querySelectorAll('.item-row');
-        let formIdx = parseInt(totalForms.value);
+        const formIdx = parseInt(totalForms.value);
+        const rows = document.querySelectorAll('.item-row');
+        const newRow = rows[0].cloneNode(true);
         
-        // Clona a primeira linha
-        let newRow = rows[0].cloneNode(true);
-        
-        // 1. Descobre o prefixo real (ex: itemos_set ou itens_os)
-        // Isso evita o erro de "campo obrigatório" porque o name ficará correto
         const prefix = totalForms.name.replace('-TOTAL_FORMS', '');
-        const regex = new RegExp(`${prefix}-\\d-`, 'g');
-        
-        // 2. Atualiza os índices nos IDs e Names
+        const regex = new RegExp(`${prefix}-(\\d)-`, 'g');
+
         newRow.innerHTML = newRow.innerHTML.replace(regex, `${prefix}-${formIdx}-`);
         
-        // 3. Limpa os valores e remove IDs de banco de dados da linha clonada
-        newRow.querySelectorAll('select, input').forEach(input => {
-            // Se for o campo ID oculto, precisamos zerar para o Django criar um NOVO item
+        // Limpa campos
+        newRow.querySelectorAll('input, select').forEach(input => {
             if (input.name.endsWith('-id')) {
                 input.value = "";
-            } else {
-                input.value = "";
-                if (input.classList.contains('item-quantidade')) input.value = 1;
-                if (input.classList.contains('item-preco')) input.value = 0;
+            } else if (input.type !== 'hidden') {
+                input.value = (input.name.endsWith('-quantidade')) ? "1" : (input.name.endsWith('-preco_unitario') ? "0" : "");
             }
         });
-    
-        // 4. Limpa o subtotal visual
-        const subtotalDisplay = newRow.querySelector('.item-subtotal');
-        if (subtotalDisplay) subtotalDisplay.value = "R$ 0,00";
-    
-        // 5. Adiciona à tabela e incrementa o contador global do Django
-        tabela.appendChild(newRow);
+
+        newRow.querySelector('.item-subtotal').value = "R$ 0,00";
+        tabelaCorpo.appendChild(newRow);
         totalForms.value = formIdx + 1;
+        calcularTotais();
     });
+
+    // --- REMOVER ITEM ---
+    tabelaCorpo.addEventListener('click', function(e) {
+        // Verifica se o clique foi no botão ou no ícone da lixeira
+        const btnRemover = e.target.closest('.remove-item');
+        
+        if (btnRemover) {
+            const row = btnRemover.closest('.item-row');
+            const rows = document.querySelectorAll('.item-row:not([style*="display: none"])');
+
+            // Impede de remover se for o único item visível
+            if (rows.length > 1) {
+                // Busca o checkbox de deleção gerado pelo Django dentro desta linha
+                const deleteCheck = row.querySelector('input[name$="-DELETE"]');
+
+                if (deleteCheck) {
+                    // Se o item já existe no banco (tem o checkbox DELETE), apenas ocultamos e marcamos
+                    deleteCheck.checked = true;
+                    row.style.display = 'none'; 
+                } else {
+                    // Se for um item novo (clonado), removemos do DOM e ajustamos o contador
+                    row.remove();
+                    totalForms.value = parseInt(totalForms.value) - 1;
+
+                    // Reindexar os campos restantes para evitar buracos no formset
+                    reindexarItens();
+                }
+                calcularTotais();
+            } else {
+                alert("A Ordem de Serviço deve ter pelo menos um item ativo.");
+            }
+        }
+    });
+
+// Função auxiliar para reindexar nomes caso remova um item do meio da lista (Novo)
+function reindexarItens() {
+    const rows = document.querySelectorAll('.item-row');
+    const prefix = totalForms.name.replace('-TOTAL_FORMS', '');
+    
+    rows.forEach((row, index) => {
+        const regex = new RegExp(`${prefix}-\\d+-`, 'g');
+        row.innerHTML = row.innerHTML.replace(regex, `${prefix}-${index}-`);
+    });
+    totalForms.value = rows.length;
+}
+
 });
 </script>
 {% endblock %}
